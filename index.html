@@ -8,10 +8,24 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     
     <script type="module">
+        // --- Configuración de Firebase ---
+        // Tus credenciales ya están integradas.
+        const firebaseConfig = {
+            apiKey: "AIzaSyAqU_YVc5guelLqj5GZEWy_BVOkk8kmCLg",
+            authDomain: "checklist-extremadura-sport.firebaseapp.com",
+            projectId: "checklist-extremadura-sport",
+            storageBucket: "checklist-extremadura-sport.firebasestorage.app",
+            messagingSenderId: "315765310685",
+            appId: "1:315765310685:web:1dff6bdc194d73b31ec734",
+            measurementId: "G-MR874YTMB5"
+        };
+
+        // El resto del código no necesita cambios.
         import { initializeApp, deleteApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, getDocs, serverTimestamp, setLogLevel, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         
+        window.firebaseConfig = firebaseConfig;
         window.firebaseSDK = {
             initializeApp, deleteApp, getApps, getApp,
             getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, getDocs, serverTimestamp, setLogLevel, writeBatch,
@@ -22,89 +36,76 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Titillium+Web:wght@400;600;700;900&display=swap');
         body { font-family: 'Titillium Web', sans-serif; background-color: #f4f7f6; }
-        .loader-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0, 0, 0, 0.8); display: flex; flex-direction: column;
-            justify-content: center; align-items: center; z-index: 9999; transition: opacity 0.3s;
-        }
-        .loader {
-            border: 8px solid #e0e0e0; border-top: 8px solid #111827;
-            border-radius: 50%; width: 60px; height: 60px; animation: spin 1s linear infinite;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .tab-button { transition: all 0.2s ease-in-out; border-bottom: 4px solid transparent; }
-        .tab-button.active { border-bottom-color: #111827; color: #111827; }
-        .app-view { display: none; }
-        .app-view.active { display: block; }
-
-        #menu-overlay { transition: opacity 0.3s ease-in-out; }
-        #side-menu { transition: transform 0.3s ease-in-out; }
-        .nav-link.active { background-color: #f3f4f6; font-weight: 700; }
+        .loader-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background-color:rgba(0,0,0,.8);display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:9999;transition:opacity .3s}.loader{border:8px solid #e0e0e0;border-top:8px solid #111827;border-radius:50%;width:60px;height:60px;animation:spin 1s linear infinite}@keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}.tab-button{transition:all .2s ease-in-out;border-bottom:4px solid transparent}.tab-button.active{border-bottom-color:#111827;color:#111827}.app-view{display:none}.app-view.active{display:block}#menu-overlay{transition:opacity .3s ease-in-out}#side-menu{transition:transform .3s ease-in-out}.nav-link.active{background-color:#f3f4f6;font-weight:700}
     </style>
 </head>
 <body class="antialiased pb-24">
-
-    <!-- Menú Lateral -->
-    <div id="menu-overlay" class="fixed inset-0 bg-black bg-opacity-60 z-50 hidden"></div>
-    <div id="side-menu" class="fixed top-0 left-0 h-full w-80 bg-white shadow-xl z-50 transform -translate-x-full">
-        <div class="p-6 flex flex-col h-full">
-            <h2 class="text-2xl font-bold text-gray-800 mb-6">Menú</h2>
-            <nav class="mb-8">
-                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Vistas</h3>
-                <div class="space-y-1">
-                    <a href="#" id="nav-checklist" class="nav-link flex items-center p-3 rounded-lg text-gray-700 hover:bg-gray-100"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>Checklist</a>
-                    <a href="#" id="nav-stats" class="nav-link flex items-center p-3 rounded-lg text-gray-700 hover:bg-gray-100"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3"><path d="M12 20v-6M6 20v-4M18 20V8M2 12h20"></path></svg>Estadísticas</a>
-                </div>
-            </nav>
-            <div class="mt-auto">
-                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Configuración</h3>
-                 <div class="mb-4">
-                    <h4 class="font-semibold text-gray-700 mb-2">Sede Activa</h4>
-                    <div class="space-y-2">
-                        <label class="flex items-center"><input type="radio" name="city" value="Cáceres" class="h-4 w-4 text-gray-800 focus:ring-gray-500"><span class="ml-2">Cáceres</span></label>
-                        <label class="flex items-center"><input type="radio" name="city" value="Badajoz" class="h-4 w-4 text-gray-800 focus:ring-gray-500"><span class="ml-2">Badajoz</span></label>
-                    </div>
-                </div>
-                <button id="save-settings-button" class="w-full bg-gray-800 text-white font-bold py-3 px-4 rounded-lg hover:bg-black transition-all text-lg shadow-md">Cambiar Sede</button>
-            </div>
+    
+    <!-- Pantalla de Selección de Sede -->
+    <div id="city-selector-view" class="fixed inset-0 bg-gray-800 flex flex-col justify-center items-center p-8 text-white z-50">
+        <h1 class="text-5xl font-black italic uppercase tracking-wider mb-4">ExtremaduraSport</h1>
+        <p class="text-xl text-gray-300 mb-12">Selecciona una sede para continuar</p>
+        <div class="w-full max-w-sm space-y-4">
+            <button id="caceres-btn" class="w-full bg-white text-gray-800 font-bold py-5 px-4 rounded-lg hover:bg-gray-200 transition-all text-2xl shadow-lg transform hover:scale-105">Cáceres</button>
+            <button id="badajoz-btn" class="w-full bg-white text-gray-800 font-bold py-5 px-4 rounded-lg hover:bg-gray-200 transition-all text-2xl shadow-lg transform hover:scale-105">Badajoz</button>
         </div>
-        <button id="close-menu-button" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
     </div>
 
-    <header class="bg-white shadow-md sticky top-0 z-40">
-        <div class="container mx-auto px-4 sm:px-6 py-3 flex justify-between items-center">
-             <button id="open-menu-button" class="p-2 -ml-2 text-gray-600 hover:text-gray-900"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button>
-             <div class="text-center">
-                <h1 class="text-3xl font-black italic text-gray-900 uppercase tracking-wider">ExtremaduraSport</h1>
-                <p id="city-display" class="text-sm font-semibold text-gray-500 uppercase tracking-widest"></p>
-             </div>
-             <div class="text-right">
-                <span id="app-version" class="text-xs font-bold text-gray-400"></span>
-             </div>
+    <!-- Menú Lateral -->
+    <div id="side-menu-container" style="display: none;">
+        <div id="menu-overlay" class="fixed inset-0 bg-black bg-opacity-60 z-50 hidden"></div>
+        <div id="side-menu" class="fixed top-0 left-0 h-full w-80 bg-white shadow-xl z-50 transform -translate-x-full">
+            <div class="p-6 flex flex-col h-full">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">Menú</h2>
+                <nav class="mb-8">
+                    <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Vistas</h3>
+                    <div class="space-y-1">
+                        <a href="#" id="nav-checklist" class="nav-link flex items-center p-3 rounded-lg text-gray-700 hover:bg-gray-100"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>Checklist</a>
+                        <a href="#" id="nav-stats" class="nav-link flex items-center p-3 rounded-lg text-gray-700 hover:bg-gray-100"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3"><path d="M12 20v-6M6 20v-4M18 20V8M2 12h20"></path></svg>Estadísticas</a>
+                    </div>
+                </nav>
+                <div class="mt-auto">
+                    <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Configuración</h3>
+                    <button id="change-city-button" class="w-full bg-gray-200 text-gray-800 font-bold py-3 px-4 rounded-lg hover:bg-gray-300 transition-all text-lg">Cambiar Sede</button>
+                </div>
+            </div>
+            <button id="close-menu-button" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
         </div>
-    </header>
+    </div>
+    
+    <div id="app-wrapper" style="display: none;">
+        <header class="bg-white shadow-md sticky top-0 z-40">
+            <div class="container mx-auto px-4 sm:px-6 py-3 flex justify-between items-center">
+                 <button id="open-menu-button" class="p-2 -ml-2 text-gray-600 hover:text-gray-900"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button>
+                 <div class="text-center">
+                    <h1 class="text-3xl font-black italic text-gray-900 uppercase tracking-wider">ExtremaduraSport</h1>
+                    <p id="city-display" class="text-sm font-semibold text-gray-500 uppercase tracking-widest"></p>
+                 </div>
+                 <div class="text-right">
+                    <span id="app-version" class="text-xs font-bold text-gray-400"></span>
+                 </div>
+            </div>
+        </header>
 
-    <main id="main-content" class="container mx-auto p-4 md:p-6 pb-20">
-        <div class="text-center py-12" id="initial-message"><p class="text-xl text-gray-600">Bienvenido. Por favor, selecciona una sede en el menú para empezar.</p></div>
-        
-        <div id="checklist-view" class="app-view">
-            <div class="mb-6 border-b border-gray-300">
-                <nav class="flex -mb-px" aria-label="Tabs"><button id="tab-pending" class="tab-button active text-gray-500 hover:text-gray-700 whitespace-nowrap py-4 px-6 font-bold text-lg">Pendientes <span id="pending-count" class="ml-2 text-sm px-2 py-1 rounded-full bg-yellow-200 text-yellow-800">0</span></button><button id="tab-completed" class="tab-button text-gray-500 hover:text-gray-700 whitespace-nowrap py-4 px-6 font-bold text-lg">Completados <span id="completed-count" class="ml-2 text-sm px-2 py-1 rounded-full bg-green-200 text-green-800">0</span></button></nav>
+        <main id="main-content" class="container mx-auto p-4 md:p-6 pb-20">
+            <div id="checklist-view" class="app-view">
+                <div class="mb-6 border-b border-gray-300">
+                    <nav class="flex -mb-px" aria-label="Tabs"><button id="tab-pending" class="tab-button active text-gray-500 hover:text-gray-700 whitespace-nowrap py-4 px-6 font-bold text-lg">Pendientes <span id="pending-count" class="ml-2 text-sm px-2 py-1 rounded-full bg-yellow-200 text-yellow-800">0</span></button><button id="tab-completed" class="tab-button text-gray-500 hover:text-gray-700 whitespace-nowrap py-4 px-6 font-bold text-lg">Completados <span id="completed-count" class="ml-2 text-sm px-2 py-1 rounded-full bg-green-200 text-green-800">0</span></button></nav>
+                </div>
+                <div id="upload-panel" class="bg-white p-6 rounded-xl shadow-lg mb-8 border border-gray-200"><h2 class="text-2xl font-bold text-gray-800 mb-3">Cargar Documentos</h2><input type="file" accept=".pdf" id="file-input" class="hidden" multiple /><button id="upload-button" class="w-full bg-gray-800 text-white font-bold py-3 px-4 rounded-lg hover:bg-black transition-all text-lg flex items-center justify-center shadow-md"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>Cargar PDF(s)</button></div>
+                <div id="tab-content-pending" class="tab-content active space-y-6"></div>
+                <div id="tab-content-completed" class="tab-content space-y-6"></div>
+                <div id="management-section" class="mt-12 text-center" style="display: none;"><button id="manage-shipments-button" class="bg-transparent text-gray-500 hover:text-black hover:underline font-semibold py-2 px-4 rounded-lg transition-all text-sm">Gestionar Envíos</button></div>
             </div>
-            <div id="upload-panel" class="bg-white p-6 rounded-xl shadow-lg mb-8 border border-gray-200"><h2 class="text-2xl font-bold text-gray-800 mb-3">Cargar Documentos</h2><input type="file" accept=".pdf" id="file-input" class="hidden" multiple /><button id="upload-button" class="w-full bg-gray-800 text-white font-bold py-3 px-4 rounded-lg hover:bg-black transition-all text-lg flex items-center justify-center shadow-md"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>Cargar PDF(s)</button></div>
-            <div id="tab-content-pending" class="tab-content active space-y-6"></div>
-            <div id="tab-content-completed" class="tab-content space-y-6"></div>
-            <div id="management-section" class="mt-12 text-center" style="display: none;"><button id="manage-shipments-button" class="bg-transparent text-gray-500 hover:text-black hover:underline font-semibold py-2 px-4 rounded-lg transition-all text-sm">Gestionar Envíos</button></div>
-        </div>
-        
-        <div id="stats-view" class="app-view">
-            <div class="border-b border-gray-300 pb-4 mb-6"><h2 class="text-3xl font-bold text-gray-800">Estadísticas de Recepción</h2><p class="text-gray-600">Resumen de envíos registrados para la sede <span id="stats-city-name" class="font-bold"></span>.</p></div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div class="space-y-6"><h3 class="text-2xl font-bold text-gray-800 border-b-2 border-blue-500 pb-2">Resumen de Packs</h3><div class="bg-white p-6 rounded-xl shadow-lg"><h4 class="text-lg font-semibold text-gray-500">Envíos de Packs</h4><p id="packs-shipments-count" class="text-5xl font-bold text-gray-800 mt-2">0</p></div><div class="bg-white p-6 rounded-xl shadow-lg"><h4 class="text-lg font-semibold text-gray-500">Paquetes Totales (Packs)</h4><p id="packs-pieces-count" class="text-5xl font-bold text-gray-800 mt-2">0</p></div><div class="bg-white p-6 rounded-xl shadow-lg"><h4 class="text-lg font-semibold text-gray-500">Peso Total (Packs)</h4><p id="packs-weight-count" class="text-5xl font-bold text-gray-800 mt-2">0.00 Kg</p></div></div>
-                <div class="space-y-6"><h3 class="text-2xl font-bold text-gray-800 border-b-2 border-green-500 pb-2">Resumen de B2B</h3><div class="bg-white p-6 rounded-xl shadow-lg"><h4 class="text-lg font-semibold text-gray-500">Envíos B2B</h4><p id="b2b-shipments-count" class="text-5xl font-bold text-gray-800 mt-2">0</p></div><div class="bg-white p-6 rounded-xl shadow-lg"><h4 class="text-lg font-semibold text-gray-500">Paquetes Totales (B2B)</h4><p id="b2b-pieces-count" class="text-5xl font-bold text-gray-800 mt-2">0</p></div><div class="bg-white p-6 rounded-xl shadow-lg"><h4 class="text-lg font-semibold text-gray-500">Peso Total (B2B)</h4><p id="b2b-weight-count" class="text-5xl font-bold text-gray-800 mt-2">0.00 Kg</p></div></div>
+            <div id="stats-view" class="app-view">
+                <div class="border-b border-gray-300 pb-4 mb-6"><h2 class="text-3xl font-bold text-gray-800">Estadísticas de Recepción</h2><p class="text-gray-600">Resumen de envíos registrados para la sede <span id="stats-city-name" class="font-bold"></span>.</p></div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="space-y-6"><h3 class="text-2xl font-bold text-gray-800 border-b-2 border-blue-500 pb-2">Resumen de Packs</h3><div class="bg-white p-6 rounded-xl shadow-lg"><h4 class="text-lg font-semibold text-gray-500">Envíos de Packs</h4><p id="packs-shipments-count" class="text-5xl font-bold text-gray-800 mt-2">0</p></div><div class="bg-white p-6 rounded-xl shadow-lg"><h4 class="text-lg font-semibold text-gray-500">Paquetes Totales (Packs)</h4><p id="packs-pieces-count" class="text-5xl font-bold text-gray-800 mt-2">0</p></div><div class="bg-white p-6 rounded-xl shadow-lg"><h4 class="text-lg font-semibold text-gray-500">Peso Total (Packs)</h4><p id="packs-weight-count" class="text-5xl font-bold text-gray-800 mt-2">0.00 Kg</p></div></div>
+                    <div class="space-y-6"><h3 class="text-2xl font-bold text-gray-800 border-b-2 border-green-500 pb-2">Resumen de B2B</h3><div class="bg-white p-6 rounded-xl shadow-lg"><h4 class="text-lg font-semibold text-gray-500">Envíos B2B</h4><p id="b2b-shipments-count" class="text-5xl font-bold text-gray-800 mt-2">0</p></div><div class="bg-white p-6 rounded-xl shadow-lg"><h4 class="text-lg font-semibold text-gray-500">Paquetes Totales (B2B)</h4><p id="b2b-pieces-count" class="text-5xl font-bold text-gray-800 mt-2">0</p></div><div class="bg-white p-6 rounded-xl shadow-lg"><h4 class="text-lg font-semibold text-gray-500">Peso Total (B2B)</h4><p id="b2b-weight-count" class="text-5xl font-bold text-gray-800 mt-2">0.00 Kg</p></div></div>
+                </div>
             </div>
-        </div>
-    </main>
+        </main>
+    </div>
     
     <div id="delete-controls" class="fixed bottom-0 left-0 w-full bg-gray-800 text-white p-4 shadow-lg transform translate-y-full transition-transform z-50" style="display: none;">
         <div class="container mx-auto flex justify-between items-center"><span id="selection-counter" class="font-bold">0 envíos seleccionados</span><div class="space-x-4"><button id="delete-selected-button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-5 rounded-lg disabled:bg-gray-500 disabled:cursor-not-allowed" disabled>Eliminar</button><button id="cancel-delete-button" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-5 rounded-lg">Cancelar</button></div></div>
@@ -113,18 +114,23 @@
 
     <script type="module">
         document.addEventListener('DOMContentLoaded', () => {
-            const APP_VERSION = "v3.6";
+            const APP_VERSION = "v3.7";
             let db; let shipmentsCollectionRef; let localShipmentsCache = [];
             let unsubscribeFromShipments; let currentCity = '';
             let isDeleteModeActive = false; let shipmentsToDelete = new Set(); let currentView = 'checklist';
             const projectId = "extremadurasport-checklist"; 
 
             const elements = {
+                citySelectorView: document.getElementById('city-selector-view'),
+                caceresBtn: document.getElementById('caceres-btn'),
+                badajozBtn: document.getElementById('badajoz-btn'),
+                appWrapper: document.getElementById('app-wrapper'),
+                sideMenuContainer: document.getElementById('side-menu-container'),
                 menuOverlay: document.getElementById('menu-overlay'), sideMenu: document.getElementById('side-menu'),
                 openMenuButton: document.getElementById('open-menu-button'), closeMenuButton: document.getElementById('close-menu-button'),
-                saveSettingsButton: document.getElementById('save-settings-button'), cityRadioButtons: document.querySelectorAll('input[name="city"]'),
+                changeCityButton: document.getElementById('change-city-button'),
                 cityDisplay: document.getElementById('city-display'), appVersion: document.getElementById('app-version'),
-                mainContent: document.getElementById('main-content'), initialMessage: document.getElementById('initial-message'),
+                mainContent: document.getElementById('main-content'), 
                 uploadButton: document.getElementById('upload-button'), fileInput: document.getElementById('file-input'),
                 loaderOverlay: document.getElementById('loader-overlay'), loaderText: document.getElementById('loader-text'),
                 managementSection: document.getElementById('management-section'), manageShipmentsButton: document.getElementById('manage-shipments-button'),
@@ -318,15 +324,10 @@
             };
 
             const connectToFirebase = async (city) => {
-                const { initializeApp, getFirestore, collection, onSnapshot, getAuth, signInAnonymously, onAuthStateChanged, setLogLevel, getApps, getApp, deleteApp } = window.firebaseSDK;
-                
                 if (!window.firebaseConfig || !window.firebaseConfig.projectId) {
-                    if (typeof __firebase_config !== 'undefined') {
-                         window.firebaseConfig = JSON.parse(__firebase_config);
-                    } else {
-                        alert("La configuración de Firebase no está disponible. No se puede conectar.");
-                        return;
-                    }
+                    // This case is for deployment, if __firebase_config is not available.
+                    alert("La configuración de Firebase no está disponible. No se puede conectar.");
+                    return;
                 }
 
                 if (unsubscribeFromShipments) { unsubscribeFromShipments(); unsubscribeFromShipments = null; }
@@ -334,18 +335,22 @@
                 currentCity = city;
                 localStorage.setItem('extremaduraSportSelectedCity', city);
                 elements.cityDisplay.textContent = city;
-                
+                elements.citySelectorView.style.display = 'none';
+                elements.appWrapper.style.display = 'block';
+                elements.sideMenuContainer.style.display = 'block';
+
+                const { initializeApp, getFirestore, collection, onSnapshot, getAuth, signInAnonymously, setLogLevel, getApps, getApp, deleteApp } = window.firebaseSDK;
                 try {
                     if (getApps().length > 0) await deleteApp(getApp());
                     const app = initializeApp(window.firebaseConfig);
                     db = getFirestore(app); const auth = getAuth(app); setLogLevel('error');
                     await signInAnonymously(auth);
-                    const collectionPath = `/artifacts/${projectId}/public/data/${city.toLowerCase()}/shipments`;
+                    // Corrected Firestore Path
+                    const collectionPath = `extremadura_sport/${city.toLowerCase()}/shipments`;
                     shipmentsCollectionRef = collection(db, collectionPath);
                     unsubscribeFromShipments = onSnapshot(shipmentsCollectionRef, (snapshot) => {
                         localShipmentsCache = snapshot.docs.map(doc => ({ firestoreId: doc.id, ...doc.data() }));
                         updateAllViews(localShipmentsCache);
-                        elements.initialMessage.style.display = 'none';
                         switchView(currentView);
                         toggleLoader(false);
                     }, error => {
@@ -358,7 +363,6 @@
             
             const toggleMenu = (show) => {
                 if (show) {
-                    elements.cityRadioButtons.forEach(radio => { radio.checked = radio.value === currentCity; });
                     elements.menuOverlay.classList.remove('hidden');
                     elements.sideMenu.classList.remove('-translate-x-full');
                 } else {
@@ -386,21 +390,21 @@
                 if (savedCity) {
                     connectToFirebase(savedCity);
                 } else {
-                    elements.initialMessage.style.display = 'block';
+                    elements.citySelectorView.style.display = 'flex';
+                    elements.appWrapper.style.display = 'none';
+                    elements.sideMenuContainer.style.display = 'none';
                 }
                 
                 elements.openMenuButton.addEventListener('click', () => toggleMenu(true));
                 elements.closeMenuButton.addEventListener('click', () => toggleMenu(false));
                 elements.menuOverlay.addEventListener('click', () => toggleMenu(false));
                 
-                elements.saveSettingsButton.addEventListener('click', () => {
-                    const selectedCityRadio = document.querySelector('input[name="city"]:checked');
-                    if (!selectedCityRadio) { alert("Por favor, selecciona una sede."); return; }
-                    const city = selectedCityRadio.value;
-                    if (city !== currentCity) {
-                       connectToFirebase(city);
-                    }
-                    toggleMenu(false);
+                elements.caceresBtn.addEventListener('click', () => connectToFirebase('Cáceres'));
+                elements.badajozBtn.addEventListener('click', () => connectToFirebase('Badajoz'));
+
+                elements.changeCityButton.addEventListener('click', () => {
+                    localStorage.removeItem('extremaduraSportSelectedCity');
+                    location.reload();
                 });
                 
                 elements.uploadButton.addEventListener('click', () => elements.fileInput.click());
