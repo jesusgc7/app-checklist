@@ -9,7 +9,6 @@
     
     <script type="module">
         // --- Configuración de Firebase ---
-        // Tus credenciales ya están integradas.
         const firebaseConfig = {
             apiKey: "AIzaSyAqU_YVc5guelLqj5GZEWy_BVOkk8kmCLg",
             authDomain: "checklist-extremadura-sport.firebaseapp.com",
@@ -20,7 +19,6 @@
             measurementId: "G-MR874YTMB5"
         };
 
-        // El resto del código no necesita cambios.
         import { initializeApp, deleteApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, getDocs, serverTimestamp, setLogLevel, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -41,7 +39,6 @@
 </head>
 <body class="antialiased pb-24">
     
-    <!-- Pantalla de Selección de Sede -->
     <div id="city-selector-view" class="fixed inset-0 bg-gray-800 flex flex-col justify-center items-center p-8 text-white z-50">
         <h1 class="text-5xl font-black italic uppercase tracking-wider mb-4">ExtremaduraSport</h1>
         <p class="text-xl text-gray-300 mb-12">Selecciona una sede para continuar</p>
@@ -51,7 +48,6 @@
         </div>
     </div>
 
-    <!-- Menú Lateral -->
     <div id="side-menu-container" style="display: none;">
         <div id="menu-overlay" class="fixed inset-0 bg-black bg-opacity-60 z-50 hidden"></div>
         <div id="side-menu" class="fixed top-0 left-0 h-full w-80 bg-white shadow-xl z-50 transform -translate-x-full">
@@ -100,8 +96,12 @@
             <div id="stats-view" class="app-view">
                 <div class="border-b border-gray-300 pb-4 mb-6"><h2 class="text-3xl font-bold text-gray-800">Estadísticas de Recepción</h2><p class="text-gray-600">Resumen de envíos registrados para la sede <span id="stats-city-name" class="font-bold"></span>.</p></div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div class="space-y-6"><h3 class="text-2xl font-bold text-gray-800 border-b-2 border-blue-500 pb-2">Resumen de Packs</h3><div class="bg-white p-6 rounded-xl shadow-lg"><h4 class="text-lg font-semibold text-gray-500">Envíos de Packs</h4><p id="packs-shipments-count" class="text-5xl font-bold text-gray-800 mt-2">0</p></div><div class="bg-white p-6 rounded-xl shadow-lg"><h4 class="text-lg font-semibold text-gray-500">Paquetes Totales (Packs)</h4><p id="packs-pieces-count" class="text-5xl font-bold text-gray-800 mt-2">0</p></div><div class="bg-white p-6 rounded-xl shadow-lg"><h4 class="text-lg font-semibold text-gray-500">Peso Total (Packs)</h4><p id="packs-weight-count" class="text-5xl font-bold text-gray-800 mt-2">0.00 Kg</p></div></div>
-                    <div class="space-y-6"><h3 class="text-2xl font-bold text-gray-800 border-b-2 border-green-500 pb-2">Resumen de B2B</h3><div class="bg-white p-6 rounded-xl shadow-lg"><h4 class="text-lg font-semibold text-gray-500">Envíos B2B</h4><p id="b2b-shipments-count" class="text-5xl font-bold text-gray-800 mt-2">0</p></div><div class="bg-white p-6 rounded-xl shadow-lg"><h4 class="text-lg font-semibold text-gray-500">Paquetes Totales (B2B)</h4><p id="b2b-pieces-count" class="text-5xl font-bold text-gray-800 mt-2">0</p></div><div class="bg-white p-6 rounded-xl shadow-lg"><h4 class="text-lg font-semibold text-gray-500">Peso Total (B2B)</h4><p id="b2b-weight-count" class="text-5xl font-bold text-gray-800 mt-2">0.00 Kg</p></div></div>
+                    <div class="space-y-6"><h3 class="text-2xl font-bold text-gray-800 border-b-2 border-blue-500 pb-2">Resumen de Packs</h3><div class="bg-white p-6 rounded-xl shadow-lg"><h4 class="text-lg font-semibold text-gray-500">Envíos de Packs</h4><p id="packs-shipments-count" class="text-5xl font-bold text-gray-800 mt-2">0</p></div><div class="bg-white p-6 rounded-xl shadow-lg"><h4 class="text-lg font-semibold text-gray-500">Cajas Totales (Packs)</h4><p id="packs-boxes-count" class="text-5xl font-bold text-gray-800 mt-2">0</p></div><div class="bg-white p-6 rounded-xl shadow-lg"><h4 class="text-lg font-semibold text-gray-500">Peso Total (Packs)</h4><p id="packs-weight-count" class="text-5xl font-bold text-gray-800 mt-2">0.00 Kg</p></div></div>
+                    <div class="space-y-6"><h3 class="text-2xl font-bold text-gray-800 border-b-2 border-green-500 pb-2">Resumen de B2B</h3><div class="bg-white p-6 rounded-xl shadow-lg"><h4 class="text-lg font-semibold text-gray-500">Envíos B2B</h4><p id="b2b-shipments-count" class="text-5xl font-bold text-gray-800 mt-2">0</p></div><div class="bg-white p-6 rounded-xl shadow-lg"><h4 class="text-lg font-semibold text-gray-500">Cajas Totales (B2B)</h4><p id="b2b-boxes-count" class="text-5xl font-bold text-gray-800 mt-2">0</p></div><div class="bg-white p-6 rounded-xl shadow-lg"><h4 class="text-lg font-semibold text-gray-500">Peso Total (B2B)</h4><p id="b2b-weight-count" class="text-5xl font-bold text-gray-800 mt-2">0.00 Kg</p></div></div>
+                </div>
+                <div class="mt-8 bg-white p-6 rounded-xl shadow-lg">
+                    <h3 class="text-2xl font-bold text-gray-800 mb-4">Análisis de Artículos (Top 10)</h3>
+                    <div id="item-stats-container" class="overflow-x-auto"></div>
                 </div>
             </div>
         </main>
@@ -114,23 +114,19 @@
 
     <script type="module">
         document.addEventListener('DOMContentLoaded', () => {
-            const APP_VERSION = "v3.7";
+            const APP_VERSION = "v3.9";
             let db; let shipmentsCollectionRef; let localShipmentsCache = [];
             let unsubscribeFromShipments; let currentCity = '';
             let isDeleteModeActive = false; let shipmentsToDelete = new Set(); let currentView = 'checklist';
             const projectId = "extremadurasport-checklist"; 
 
             const elements = {
-                citySelectorView: document.getElementById('city-selector-view'),
-                caceresBtn: document.getElementById('caceres-btn'),
-                badajozBtn: document.getElementById('badajoz-btn'),
-                appWrapper: document.getElementById('app-wrapper'),
-                sideMenuContainer: document.getElementById('side-menu-container'),
+                citySelectorView: document.getElementById('city-selector-view'), caceresBtn: document.getElementById('caceres-btn'), badajozBtn: document.getElementById('badajoz-btn'),
+                appWrapper: document.getElementById('app-wrapper'), sideMenuContainer: document.getElementById('side-menu-container'),
                 menuOverlay: document.getElementById('menu-overlay'), sideMenu: document.getElementById('side-menu'),
                 openMenuButton: document.getElementById('open-menu-button'), closeMenuButton: document.getElementById('close-menu-button'),
-                changeCityButton: document.getElementById('change-city-button'),
-                cityDisplay: document.getElementById('city-display'), appVersion: document.getElementById('app-version'),
-                mainContent: document.getElementById('main-content'), 
+                changeCityButton: document.getElementById('change-city-button'), cityDisplay: document.getElementById('city-display'),
+                appVersion: document.getElementById('app-version'), mainContent: document.getElementById('main-content'), 
                 uploadButton: document.getElementById('upload-button'), fileInput: document.getElementById('file-input'),
                 loaderOverlay: document.getElementById('loader-overlay'), loaderText: document.getElementById('loader-text'),
                 managementSection: document.getElementById('management-section'), manageShipmentsButton: document.getElementById('manage-shipments-button'),
@@ -142,9 +138,10 @@
                 checklistView: document.getElementById('checklist-view'), statsView: document.getElementById('stats-view'),
                 navChecklist: document.getElementById('nav-checklist'), navStats: document.getElementById('nav-stats'),
                 statsCityName: document.getElementById('stats-city-name'),
-                packsShipmentsCount: document.getElementById('packs-shipments-count'), packsPiecesCount: document.getElementById('packs-pieces-count'),
+                packsShipmentsCount: document.getElementById('packs-shipments-count'), packsBoxesCount: document.getElementById('packs-boxes-count'),
                 packsWeightCount: document.getElementById('packs-weight-count'), b2bShipmentsCount: document.getElementById('b2b-shipments-count'),
-                b2bPiecesCount: document.getElementById('b2b-pieces-count'), b2bWeightCount: document.getElementById('b2b-weight-count'),
+                b2bBoxesCount: document.getElementById('b2b-boxes-count'), b2bWeightCount: document.getElementById('b2b-weight-count'),
+                itemStatsContainer: document.getElementById('item-stats-container'),
             };
 
             const toggleLoader = (show, text = '') => {
@@ -161,12 +158,57 @@
                 const packsData = shipments.filter(s => s.type === 'Pack');
                 const b2bData = shipments.filter(s => s.type !== 'Pack');
                 elements.packsShipmentsCount.textContent = packsData.length;
-                elements.packsPiecesCount.textContent = packsData.reduce((sum, s) => sum + (s.totalPieces || 0), 0);
+                elements.packsBoxesCount.textContent = packsData.reduce((sum, s) => sum + (s.numberOfBoxes || 0), 0);
                 elements.packsWeightCount.textContent = `${packsData.reduce((sum, s) => sum + (s.weight || 0), 0).toFixed(2)} Kg`;
                 elements.b2bShipmentsCount.textContent = b2bData.length;
-                elements.b2bPiecesCount.textContent = b2bData.reduce((sum, s) => sum + (s.totalPieces || 0), 0);
+                elements.b2bBoxesCount.textContent = b2bData.reduce((sum, s) => sum + (s.numberOfBoxes || 0), 0);
                 elements.b2bWeightCount.textContent = `${b2bData.reduce((sum, s) => sum + (s.weight || 0), 0).toFixed(2)} Kg`;
                 elements.statsCityName.textContent = currentCity;
+                
+                const itemStats = {};
+                shipments.forEach(s => {
+                    if (s.items && Array.isArray(s.items)) {
+                        s.items.forEach(item => {
+                            const key = `${item.description.trim()} | ${item.size.trim()}`;
+                            itemStats[key] = (itemStats[key] || 0) + item.quantity;
+                        });
+                    }
+                });
+
+                const sortedItems = Object.entries(itemStats)
+                    .map(([name, quantity]) => ({ name, quantity }))
+                    .sort((a, b) => b.quantity - a.quantity)
+                    .slice(0, 10);
+
+                const statsContainer = elements.itemStatsContainer;
+                statsContainer.innerHTML = '';
+                if (sortedItems.length === 0) {
+                    statsContainer.innerHTML = `<p class="text-center text-gray-500 py-4">No hay datos de artículos para mostrar. Sube nuevos PDFs para generar estadísticas.</p>`;
+                } else {
+                    const table = document.createElement('table');
+                    table.className = 'w-full text-left table-auto';
+                    table.innerHTML = `
+                        <thead class="bg-gray-100 text-gray-600 uppercase text-sm">
+                            <tr>
+                                <th class="p-3">Artículo</th>
+                                <th class="p-3">Talla</th>
+                                <th class="p-3 text-right">Cantidad Total</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>`;
+                    const tbody = table.querySelector('tbody');
+                    sortedItems.forEach(item => {
+                        const [description, size] = item.name.split(' | ');
+                        const row = document.createElement('tr');
+                        row.className = 'border-b border-gray-200';
+                        row.innerHTML = `
+                            <td class="p-3 font-medium text-gray-800">${description}</td>
+                            <td class="p-3 text-gray-600">${size}</td>
+                            <td class="p-3 text-right font-bold text-lg text-gray-900">${item.quantity}</td>`;
+                        tbody.appendChild(row);
+                    });
+                    statsContainer.appendChild(table);
+                }
             };
 
             const renderAllShipments = (shipments) => {
@@ -229,16 +271,31 @@
                 }
                 const orderIdRegex = /Shipping\s*Order\s*([A-Z0-9]+)/i; const dateRegex = /shipping\s*date\s*[^0-9/]*([0-9/]{8,})/i;
                 const boxIdRegex = /ND\d{10}/g; const descRegex = /Order Description\s*([A-Z0-9-]+)/i;
-                const piecesRegex = /Total Pieces\s*,\s*"?(\d+)"?/i; const weightRegex = /Weight\s*,\s*"?([\d,\.]+)\s*Kg"?/i;
+                const weightRegex = /Weight\s*,\s*"?([\d,\.]+)\s*Kg"?/i;
+                const itemRegex = /"(\d{12})\s*","([^"]+?)\s*","([^"]+?)\s*","(\d+)\s*","([^"]+?)\s*"/g;
+                
                 const orderIdMatch = fullText.match(orderIdRegex); const shippingOrderId = orderIdMatch ? orderIdMatch[1] : `Desconocido-${Date.now()}`;
                 const dateMatch = fullText.match(dateRegex); const shippingDate = dateMatch ? dateMatch[1] : "N/A";
                 const descMatch = fullText.match(descRegex); const orderDescription = descMatch ? descMatch[1] : "Sin Descripción";
                 const boxIdMatches = fullText.match(boxIdRegex); const uniqueBoxIds = boxIdMatches ? [...new Set(boxIdMatches)] : [];
-                const piecesMatch = fullText.match(piecesRegex); const totalPieces = piecesMatch ? parseInt(piecesMatch[1], 10) : 0;
                 const weightMatch = fullText.match(weightRegex); const weight = weightMatch ? parseFloat(weightMatch[1].replace(',', '.')) : 0;
+                
+                const items = [];
+                const itemSectionMatch = fullText.match(/ORDER RECAP([\s\S]*)/);
+                if (itemSectionMatch) {
+                    const itemSection = itemSectionMatch[1];
+                    const itemMatches = itemSection.matchAll(itemRegex);
+                    for (const match of itemMatches) {
+                        items.push({
+                            code: match[1], description: match[2].trim(),
+                            size: match[3].trim(), quantity: parseInt(match[4], 10)
+                        });
+                    }
+                }
+
                 if (uniqueBoxIds.length === 0) throw new Error(`En "${file.name}", no se encontraron IDs de caja.`);
                 const type = orderDescription.startsWith('CS-') ? 'Pack' : 'B2B';
-                return { shippingOrderId, shippingDate, boxIds: uniqueBoxIds, orderDescription, type, totalPieces, weight };
+                return { shippingOrderId, shippingDate, boxIds: uniqueBoxIds, orderDescription, type, weight, items, numberOfBoxes: uniqueBoxIds.length };
             };
 
             const handleFileSelect = async (event) => {
@@ -250,7 +307,8 @@
                         if (localShipmentsCache.some(s => s.id === data.shippingOrderId)) continue;
                         const newShipment = {
                             id: data.shippingOrderId, orderDescription: data.orderDescription, type: data.type,
-                            fileName: file.name, shippingDate: data.shippingDate, totalPieces: data.totalPieces, weight: data.weight,
+                            fileName: file.name, shippingDate: data.shippingDate, 
+                            numberOfBoxes: data.numberOfBoxes, weight: data.weight, items: data.items,
                             sortableDate: data.shippingDate.split('/').reverse().join('-'),
                             boxes: data.boxIds.map(id => ({ id, delivered: false })), 
                             lastUpdated: window.firebaseSDK.serverTimestamp(),
@@ -324,12 +382,6 @@
             };
 
             const connectToFirebase = async (city) => {
-                if (!window.firebaseConfig || !window.firebaseConfig.projectId) {
-                    // This case is for deployment, if __firebase_config is not available.
-                    alert("La configuración de Firebase no está disponible. No se puede conectar.");
-                    return;
-                }
-
                 if (unsubscribeFromShipments) { unsubscribeFromShipments(); unsubscribeFromShipments = null; }
                 toggleLoader(true, `Conectando a ${city}...`);
                 currentCity = city;
@@ -341,12 +393,21 @@
 
                 const { initializeApp, getFirestore, collection, onSnapshot, getAuth, signInAnonymously, setLogLevel, getApps, getApp, deleteApp } = window.firebaseSDK;
                 try {
-                    if (getApps().length > 0) await deleteApp(getApp());
-                    const app = initializeApp(window.firebaseConfig);
-                    db = getFirestore(app); const auth = getAuth(app); setLogLevel('error');
-                    await signInAnonymously(auth);
-                    // Corrected Firestore Path
-                    const collectionPath = `extremadura_sport/${city.toLowerCase()}/shipments`;
+                    let app;
+                    if (getApps().length === 0) {
+                        app = initializeApp(window.firebaseConfig);
+                    } else {
+                        app = getApp();
+                    }
+                    db = getFirestore(app);
+                    const auth = getAuth(app);
+                    setLogLevel('error');
+                    
+                    if (!auth.currentUser) {
+                        await signInAnonymously(auth);
+                    }
+
+                    const collectionPath = `projects/${projectId}/data/${city.toLowerCase()}/shipments`;
                     shipmentsCollectionRef = collection(db, collectionPath);
                     unsubscribeFromShipments = onSnapshot(shipmentsCollectionRef, (snapshot) => {
                         localShipmentsCache = snapshot.docs.map(doc => ({ firestoreId: doc.id, ...doc.data() }));
@@ -354,10 +415,14 @@
                         switchView(currentView);
                         toggleLoader(false);
                     }, error => {
-                        console.error("Error de Firestore:", error); alert("No se pudo conectar a la base de datos."); toggleLoader(false);
+                        console.error("Error de Firestore:", error);
+                        alert("No se pudo conectar a la base de datos.");
+                        toggleLoader(false);
                     });
                 } catch (error) {
-                    console.error("Firebase init failed:", error); alert("Error fatal. Refresca la página."); toggleLoader(false);
+                    console.error("Firebase init failed:", error);
+                    alert("Error fatal. Refresca la página.");
+                    toggleLoader(false);
                 }
             };
             
@@ -424,4 +489,3 @@
     </script>
 </body>
 </html>
-
