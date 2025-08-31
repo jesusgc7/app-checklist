@@ -21,13 +21,13 @@
 
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, getDocs, serverTimestamp, setLogLevel, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         
         window.firebaseConfig = firebaseConfig;
         window.firebaseSDK = {
             initializeApp, getApps, getApp,
             getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, getDocs, serverTimestamp, setLogLevel, writeBatch,
-            getAuth, signInAnonymously
+            getAuth, signInAnonymously, onAuthStateChanged
         };
     </script>
 
@@ -45,8 +45,8 @@
         <h1 class="text-5xl font-black italic uppercase tracking-wider mb-4 text-center">ExtremaduraSport</h1>
         <p class="text-xl text-gray-300 mb-12 text-center">Selecciona una sede para continuar</p>
         <div class="w-full max-w-sm space-y-4">
-            <button id="caceres-btn" data-city="Cáceres" class="city-btn w-full bg-white text-gray-800 font-bold py-5 px-4 rounded-lg hover:bg-gray-200 transition-all text-2xl shadow-lg transform hover:scale-105">Cáceres</button>
-            <button id="badajoz-btn" data-city="Badajoz" class="city-btn w-full bg-white text-gray-800 font-bold py-5 px-4 rounded-lg hover:bg-gray-200 transition-all text-2xl shadow-lg transform hover:scale-105">Badajoz</button>
+            <button data-city="Cáceres" class="city-btn w-full bg-white text-gray-800 font-bold py-5 px-4 rounded-lg hover:bg-gray-200 transition-all text-2xl shadow-lg transform hover:scale-105">Cáceres</button>
+            <button data-city="Badajoz" class="city-btn w-full bg-white text-gray-800 font-bold py-5 px-4 rounded-lg hover:bg-gray-200 transition-all text-2xl shadow-lg transform hover:scale-105">Badajoz</button>
         </div>
     </div>
 
@@ -98,14 +98,7 @@
     </div>
     
     <div id="delete-controls" class="fixed bottom-0 left-0 w-full bg-gray-800 text-white p-4 shadow-lg transform translate-y-full transition-transform z-50" style="display: none;">
-        <div class="container mx-auto flex justify-between items-center flex-wrap gap-4">
-            <span id="selection-counter" class="font-bold">0 envíos seleccionados</span>
-            <div class="flex space-x-4">
-                <button id="select-all-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-5 rounded-lg">Seleccionar Todo</button>
-                <button id="delete-selected-button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-5 rounded-lg disabled:bg-gray-500 disabled:cursor-not-allowed" disabled>Eliminar</button>
-                <button id="cancel-delete-button" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-5 rounded-lg">Cancelar</button>
-            </div>
-        </div>
+        <div class="container mx-auto flex justify-between items-center"><span id="selection-counter" class="font-bold">0 envíos seleccionados</span><div class="space-x-4"><button id="delete-selected-button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-5 rounded-lg disabled:bg-gray-500 disabled:cursor-not-allowed" disabled>Eliminar</button><button id="cancel-delete-button" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-5 rounded-lg">Cancelar</button></div></div>
     </div>
     
     <div id="confirm-delete-modal" class="modal-overlay" style="display: none;">
@@ -124,10 +117,14 @@
     <script type="module">
         document.addEventListener('DOMContentLoaded', () => {
             const APP_VERSION = "v5.0";
-            let db; let shipmentsCollectionRef; let localShipmentsCache = [];
-            let unsubscribeFromShipments; let currentCity = '';
-            let isDeleteModeActive = false; let shipmentsToDelete = new Set(); 
-            const projectId = "extremadurasport-checklist"; 
+            let db, auth;
+            let shipmentsCollectionRef;
+            let localShipmentsCache = [];
+            let unsubscribeFromShipments;
+            let currentCity = '';
+            let isDeleteModeActive = false;
+            let shipmentsToDelete = new Set();
+            const projectId = "extremadurasport-checklist";
 
             const elements = {
                 citySelectorView: document.getElementById('city-selector-view'),
@@ -144,7 +141,6 @@
                 pendingContent: document.getElementById('tab-content-pending'), partialContent: document.getElementById('tab-content-partial'), completedContent: document.getElementById('tab-content-completed'),
                 deleteControls: document.getElementById('delete-controls'), selectionCounter: document.getElementById('selection-counter'),
                 deleteSelectedButton: document.getElementById('delete-selected-button'), cancelDeleteButton: document.getElementById('cancel-delete-button'),
-                selectAllButton: document.getElementById('select-all-button'),
                 confirmDeleteModal: document.getElementById('confirm-delete-modal'),
                 confirmDeleteText: document.getElementById('confirm-delete-text'),
                 confirmDeleteBtn: document.getElementById('confirm-delete-btn'),
@@ -182,7 +178,8 @@
             const renderShipmentList = (shipmentList, container, emptyText) => {
                 container.innerHTML = '';
                 if (shipmentList.length === 0) {
-                    container.innerHTML = `<p class="text-center text-gray-500 py-8 text-xl">${emptyText}</p>`; return;
+                    container.innerHTML = `<p class="text-center text-gray-500 py-8 text-xl">${emptyText}</p>`;
+                    return;
                 }
                 shipmentList.sort((a, b) => (b.createdAt?.toDate?.() || 0) - (a.createdAt?.toDate?.() || 0));
                 const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
@@ -223,10 +220,8 @@
                 }
                 const fullText = rawTextItems.join(' ');
 
-                const orderIdRegex = /Shipping Order\s*([A-Z0-9]+)/i;
-                const dateRegex = /Shipping date\s*[^A-Z0-9]*([0-9\/]+)/i;
-                const boxIdRegex = /ND\d{10}/g; 
-                const descRegex = /Order Description\s*([A-Z0-9-]+)/i;
+                const orderIdRegex = /Shipping Order\s*([A-Z0-9]+)/i; const dateRegex = /Shipping date\s*,\s*"?([0-9/]+)"?/i;
+                const boxIdRegex = /ND\d{10}/g; const descRegex = /Order Description\s*([A-Z0-9-]+)/i;
                 
                 const orderIdMatch = fullText.match(orderIdRegex); const shippingOrderId = orderIdMatch ? orderIdMatch[1] : `Desconocido-${Date.now()}`;
                 const dateMatch = fullText.match(dateRegex); const shippingDate = dateMatch ? dateMatch[1] : "N/A";
@@ -235,7 +230,7 @@
                 
                 return { shippingOrderId, shippingDate, boxIds: uniqueBoxIds, orderDescription, fileName: file.name };
             };
-
+            
             const handleFileSelect = async (files) => {
                 if (!files || files.length === 0 || !shipmentsCollectionRef) return;
                 toggleLoader(true, `Procesando ${files.length} archivo(s)...`);
@@ -289,9 +284,6 @@
                 const count = shipmentsToDelete.size;
                 elements.selectionCounter.textContent = `${count} envío(s) seleccionado(s)`;
                 elements.deleteSelectedButton.disabled = count === 0;
-                 const allVisibleShipments = getVisibleShipmentIds();
-                const allSelected = allVisibleShipments.length > 0 && allVisibleShipments.every(id => shipmentsToDelete.has(id));
-                elements.selectAllButton.textContent = allSelected ? 'Deseleccionar Todo' : 'Seleccionar Todo';
             };
             
             const handleShipmentSelect = (event) => {
@@ -301,26 +293,6 @@
                     if (target.checked) shipmentsToDelete.add(firestoreId); else shipmentsToDelete.delete(firestoreId);
                     updateDeleteControls(); updateAllViews(localShipmentsCache);
                 }
-            };
-
-            const getVisibleShipmentIds = () => {
-                 const searchTerm = elements.boxSearchInput.value.trim();
-                return localShipmentsCache
-                    .filter(s => searchTerm.length < 4 || s.boxes.some(b => b.id.endsWith(searchTerm)))
-                    .map(s => s.firestoreId);
-            };
-
-            const handleSelectAllToggle = () => {
-                const visibleShipmentIds = getVisibleShipmentIds();
-                const allSelected = visibleShipmentIds.length > 0 && visibleShipmentIds.every(id => shipmentsToDelete.has(id));
-
-                if (allSelected) {
-                    visibleShipmentIds.forEach(id => shipmentsToDelete.delete(id));
-                } else {
-                    visibleShipmentIds.forEach(id => shipmentsToDelete.add(id));
-                }
-                updateDeleteControls();
-                updateAllViews(localShipmentsCache);
             };
 
             const handleDeleteSelected = () => {
@@ -347,22 +319,48 @@
                 document.getElementById(`tab-content-${activeTab}`).style.display = 'block';
             };
 
-            const connectToFirebase = async (city) => {
-                const { initializeApp, getFirestore, collection, onSnapshot, getAuth, signInAnonymously, setLogLevel, getApps, getApp } = window.firebaseSDK;
-                
-                if (!window.firebaseConfig || !window.firebaseConfig.projectId) {
-                    alert("La configuración de Firebase no está disponible. No se puede conectar.");
-                    return;
+            const listenToCityData = (city) => {
+                if (unsubscribeFromShipments) {
+                    unsubscribeFromShipments();
+                    unsubscribeFromShipments = null;
                 }
+                const { collection, onSnapshot, getDocs } = window.firebaseSDK;
+                const collectionPath = `projects/${projectId}/data/${city.toLowerCase()}/shipments`;
+                shipmentsCollectionRef = collection(db, collectionPath);
                 
-                toggleLoader(true, `Conectando a ${city}...`);
+                // Fetch initial data to render immediately
+                getDocs(shipmentsCollectionRef).then(snapshot => {
+                    localShipmentsCache = snapshot.docs.map(doc => ({ firestoreId: doc.id, ...doc.data() }));
+                    updateAllViews(localShipmentsCache);
+                    toggleLoader(false);
+                });
+
+                // Set up the listener for subsequent changes, but DON'T re-render immediately
+                unsubscribeFromShipments = onSnapshot(shipmentsCollectionRef, (snapshot) => {
+                    localShipmentsCache = snapshot.docs.map(doc => ({ firestoreId: doc.id, ...doc.data() }));
+                    // Only update counts in background, don't trigger a full re-render
+                    const pending = localShipmentsCache.filter(s => s.boxes.every(b => !b.delivered)).length;
+                    const partial = localShipmentsCache.filter(s => s.boxes.some(b => b.delivered) && !s.boxes.every(b => b.delivered)).length;
+                    const completed = localShipmentsCache.filter(s => s.boxes.every(b => b.delivered)).length;
+                    elements.pendingCount.textContent = pending;
+                    elements.partialCount.textContent = partial;
+                    elements.completedCount.textContent = completed;
+                });
+            };
+
+            const showApp = (city) => {
                 currentCity = city;
                 localStorage.setItem('extremaduraSportSelectedCity', city);
                 elements.cityDisplay.textContent = city;
                 elements.citySelectorView.style.display = 'none';
                 elements.appWrapper.style.display = 'block';
                 elements.sideMenuContainer.style.display = 'block';
-                
+                listenToCityData(city);
+            };
+
+            const initializeAppAndAuth = async () => {
+                const { initializeApp, getApps, getApp, getAuth, signInAnonymously, onAuthStateChanged, setLogLevel } = window.firebaseSDK;
+                toggleLoader(true, "Inicializando conexión...");
                 try {
                     let app;
                     if (getApps().length === 0) {
@@ -370,35 +368,34 @@
                     } else {
                         app = getApp();
                     }
-                    db = getFirestore(app);
-                    const auth = getAuth(app);
+                    db = window.firebaseSDK.getFirestore(app);
+                    auth = getAuth(app);
                     setLogLevel('error');
                     
-                    if (!auth.currentUser) {
-                        await signInAnonymously(auth);
-                    }
-                    
-                    if (unsubscribeFromShipments) { 
-                        unsubscribeFromShipments(); 
-                        unsubscribeFromShipments = null; 
-                    }
-
-                    const collectionPath = `projects/${projectId}/data/${city.toLowerCase()}/shipments`;
-                    shipmentsCollectionRef = collection(db, collectionPath);
-                    unsubscribeFromShipments = onSnapshot(shipmentsCollectionRef, (snapshot) => {
-                        localShipmentsCache = snapshot.docs.map(doc => ({ firestoreId: doc.id, ...doc.data() }));
-                        updateAllViews(localShipmentsCache);
-                        toggleLoader(false);
-                    }, error => {
-                        console.error("Error de Firestore:", error);
-                        alert("No se pudo conectar a la base de datos.");
-                        toggleLoader(false);
+                    onAuthStateChanged(auth, (user) => {
+                        if (user) {
+                            const savedCity = localStorage.getItem('extremaduraSportSelectedCity');
+                            if (savedCity) {
+                                showApp(savedCity);
+                            } else {
+                                showCitySelector();
+                            }
+                        } else {
+                             signInAnonymously(auth);
+                        }
                     });
-                } catch (error) {
+                } catch(error) {
                     console.error("Firebase init failed:", error);
                     alert("Error fatal. Refresca la página.");
                     toggleLoader(false);
                 }
+            };
+
+            const showCitySelector = () => {
+                toggleLoader(false);
+                elements.citySelectorView.style.display = 'flex';
+                elements.appWrapper.style.display = 'none';
+                elements.sideMenuContainer.style.display = 'none';
             };
             
             const toggleMenu = (show) => {
@@ -413,25 +410,16 @@
             
             const main = () => {
                 elements.appVersion.textContent = APP_VERSION;
-                const savedCity = localStorage.getItem('extremaduraSportSelectedCity');
-                if (savedCity) {
-                    connectToFirebase(savedCity);
-                } else {
-                    elements.citySelectorView.style.display = 'flex';
-                    elements.appWrapper.style.display = 'none';
-                    elements.sideMenuContainer.style.display = 'none';
-                }
+                initializeAppAndAuth();
+                
+                document.querySelectorAll('.city-btn').forEach(btn => {
+                    btn.addEventListener('click', () => showApp(btn.dataset.city));
+                });
                 
                 elements.openMenuButton.addEventListener('click', () => toggleMenu(true));
                 elements.closeMenuButton.addEventListener('click', () => toggleMenu(false));
                 elements.menuOverlay.addEventListener('click', () => toggleMenu(false));
                 
-                document.querySelectorAll('.city-btn').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        connectToFirebase(btn.dataset.city);
-                    });
-                });
-
                 elements.changeCityButton.addEventListener('click', () => {
                     localStorage.removeItem('extremaduraSportSelectedCity');
                     location.reload();
@@ -448,7 +436,6 @@
                 elements.manageShipmentsButton.addEventListener('click', () => toggleDeleteMode(true));
                 elements.cancelDeleteButton.addEventListener('click', () => toggleDeleteMode(false));
                 elements.deleteSelectedButton.addEventListener('click', handleDeleteSelected);
-                elements.selectAllButton.addEventListener('click', handleSelectAllToggle);
                 elements.confirmDeleteBtn.addEventListener('click', executeDelete);
                 elements.cancelConfirmDeleteBtn.addEventListener('click', () => { elements.confirmDeleteModal.style.display = 'none'; });
                 elements.boxSearchInput.addEventListener('input', () => updateAllViews(localShipmentsCache));
