@@ -6,8 +6,7 @@
     <title>Checklist de Recepción - ExtremaduraSport</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <!-- Chart.js para los gráficos -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
     
     <script type="module">
         // --- Configuración de Firebase ---
@@ -39,6 +38,9 @@
         .modal-overlay,.loader-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background-color:rgba(0,0,0,.8);display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:9999;transition:opacity .3s}.loader{border:8px solid #e0e0e0;border-top:8px solid #111827;border-radius:50%;width:60px;height:60px;animation:spin 1s linear infinite}@keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}.tab-button{transition:all .2s ease-in-out;border-bottom:4px solid transparent}.tab-button.active{border-bottom-color:#111827;color:#111827}.app-view{display:none}.app-view.active{display:block}#menu-overlay{transition:opacity .3s ease-in-out}#side-menu{transition:transform .3s ease-in-out}.nav-link.active{background-color:#f3f4f6;font-weight:700}
         .item-stats-filter-btn { border-bottom: 3px solid transparent; }
         .item-stats-filter-btn.active { border-bottom-color: #111827; font-weight: 700; }
+        .chart-tooltip { position: absolute; text-align: center; padding: 8px; font: 12px sans-serif; background: lightsteelblue; border: 0px; border-radius: 8px; pointer-events: none; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
     </style>
 </head>
 <body class="antialiased pb-24">
@@ -90,26 +92,33 @@
         <main id="main-content" class="container mx-auto p-4 md:p-6 pb-20">
             <div id="checklist-view" class="app-view">
                 <div class="mb-6 border-b border-gray-300">
-                    <nav class="flex -mb-px" aria-label="Tabs"><button id="tab-pending" class="tab-button active text-gray-500 hover:text-gray-700 whitespace-nowrap py-4 px-6 font-bold text-lg">Pendientes <span id="pending-count" class="ml-2 text-sm px-2 py-1 rounded-full bg-yellow-200 text-yellow-800">0</span></button><button id="tab-completed" class="tab-button text-gray-500 hover:text-gray-700 whitespace-nowrap py-4 px-6 font-bold text-lg">Completados <span id="completed-count" class="ml-2 text-sm px-2 py-1 rounded-full bg-green-200 text-green-800">0</span></button></nav>
+                    <nav class="flex -mb-px" aria-label="Tabs">
+                        <button id="tab-pending" class="tab-button active text-gray-500 hover:text-gray-700 whitespace-nowrap py-4 px-6 font-bold text-lg">Pendientes <span id="pending-count" class="ml-2 text-sm px-2 py-1 rounded-full bg-orange-200 text-orange-800">0</span></button>
+                        <button id="tab-partial" class="tab-button text-gray-500 hover:text-gray-700 whitespace-nowrap py-4 px-6 font-bold text-lg">Parcialmente Recibido <span id="partial-count" class="ml-2 text-sm px-2 py-1 rounded-full bg-yellow-200 text-yellow-800">0</span></button>
+                        <button id="tab-completed" class="tab-button text-gray-500 hover:text-gray-700 whitespace-nowrap py-4 px-6 font-bold text-lg">Completados <span id="completed-count" class="ml-2 text-sm px-2 py-1 rounded-full bg-green-200 text-green-800">0</span></button>
+                    </nav>
                 </div>
                 <div id="upload-panel" class="bg-white p-6 rounded-xl shadow-lg mb-8 border border-gray-200"><h2 class="text-2xl font-bold text-gray-800 mb-3">Cargar Documentos</h2><input type="file" accept=".pdf" id="file-input" class="hidden" multiple /><button id="upload-button" class="w-full bg-gray-800 text-white font-bold py-3 px-4 rounded-lg hover:bg-black transition-all text-lg flex items-center justify-center shadow-md"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>Cargar PDF(s)</button></div>
                 <div id="tab-content-pending" class="tab-content active space-y-6"></div>
+                <div id="tab-content-partial" class="tab-content space-y-6"></div>
                 <div id="tab-content-completed" class="tab-content space-y-6"></div>
                 <div id="management-section" class="mt-12 text-center" style="display: none;"><button id="manage-shipments-button" class="bg-transparent text-gray-500 hover:text-black hover:underline font-semibold py-2 px-4 rounded-lg transition-all text-sm">Gestionar Envíos</button></div>
             </div>
             <div id="stats-view" class="app-view">
                 <div class="border-b border-gray-300 pb-4 mb-6"><h2 class="text-3xl font-bold text-gray-800">Estadísticas de Recepción</h2><p class="text-gray-600">Resumen de envíos registrados para la sede <span id="stats-city-name" class="font-bold"></span>.</p></div>
                 
-                <!-- Gráficos -->
+                <div class="bg-white p-6 rounded-xl shadow-lg mb-8 border border-gray-200">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">Filtros</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div><label for="start-date" class="block text-sm font-medium text-gray-700">Fecha de Inicio</label><input type="date" id="start-date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-gray-800 focus:ring-gray-800 sm:text-sm"></div>
+                        <div><label for="end-date" class="block text-sm font-medium text-gray-700">Fecha de Fin</label><input type="date" id="end-date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-gray-800 focus:ring-gray-800 sm:text-sm"></div>
+                        <div><label class="block text-sm font-medium text-transparent">.</label><button id="reset-filters-button" class="w-full bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-300 transition-all text-sm">Limpiar Filtros</button></div>
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                    <div class="bg-white p-6 rounded-xl shadow-lg">
-                        <h3 class="text-xl font-bold text-gray-800 text-center mb-4">Distribución de Cajas por Tipo</h3>
-                        <canvas id="box-type-chart"></canvas>
-                    </div>
-                    <div class="bg-white p-6 rounded-xl shadow-lg">
-                        <h3 class="text-xl font-bold text-gray-800 text-center mb-4">Estado de los Envíos</h3>
-                        <canvas id="shipment-status-chart"></canvas>
-                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-lg"><h3 class="text-xl font-bold text-gray-800 mb-4 text-center">Estado de Envíos</h3><div id="shipment-status-chart" class="w-full h-64"></div></div>
+                    <div class="bg-white p-6 rounded-xl shadow-lg"><h3 class="text-xl font-bold text-gray-800 mb-4 text-center">Distribución de Cajas</h3><div id="box-type-chart" class="w-full h-64"></div></div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -117,8 +126,9 @@
                     <div class="space-y-6"><h3 class="text-2xl font-bold text-gray-800 border-b-2 border-green-500 pb-2">Resumen de B2B</h3><div class="bg-white p-6 rounded-xl shadow-lg"><h4 class="text-lg font-semibold text-gray-500">Envíos B2B</h4><p id="b2b-shipments-count" class="text-5xl font-bold text-gray-800 mt-2">0</p></div><div class="bg-white p-6 rounded-xl shadow-lg"><h4 class="text-lg font-semibold text-gray-500">Cajas Totales (B2B)</h4><p id="b2b-boxes-count" class="text-5xl font-bold text-gray-800 mt-2">0</p></div><div class="bg-white p-6 rounded-xl shadow-lg"><h4 class="text-lg font-semibold text-gray-500">Prendas Totales (B2B)</h4><p id="b2b-quantity-count" class="text-5xl font-bold text-gray-800 mt-2">0</p></div></div>
                 </div>
                 <div class="mt-8 bg-white p-6 rounded-xl shadow-lg">
-                    <div class="flex justify-between items-center mb-4">
+                    <div class="flex justify-between items-center mb-4 flex-wrap gap-4">
                          <h3 class="text-2xl font-bold text-gray-800">Análisis de Artículos (Top 10)</h3>
+                         <input type="text" id="item-search-input" placeholder="Buscar por nombre de artículo..." class="block w-full sm:w-64 rounded-md border-gray-300 shadow-sm focus:border-gray-800 focus:ring-gray-800 sm:text-sm">
                          <div id="item-stats-filters" class="flex space-x-2 rounded-lg bg-gray-200 p-1">
                              <button data-filter="all" class="item-stats-filter-btn px-3 py-1 text-sm font-bold rounded-md">Completo</button>
                              <button data-filter="Pack" class="item-stats-filter-btn px-3 py-1 text-sm font-bold rounded-md">Packs</button>
@@ -155,7 +165,6 @@
             let unsubscribeFromShipments; let currentCity = '';
             let isDeleteModeActive = false; let shipmentsToDelete = new Set(); let currentView = 'checklist';
             const projectId = "extremadurasport-checklist"; 
-            let boxTypeChart = null; let shipmentStatusChart = null;
 
             const elements = {
                 citySelectorView: document.getElementById('city-selector-view'), caceresBtn: document.getElementById('caceres-btn'), badajozBtn: document.getElementById('badajoz-btn'),
@@ -167,9 +176,9 @@
                 uploadButton: document.getElementById('upload-button'), fileInput: document.getElementById('file-input'),
                 loaderOverlay: document.getElementById('loader-overlay'), loaderText: document.getElementById('loader-text'),
                 managementSection: document.getElementById('management-section'), manageShipmentsButton: document.getElementById('manage-shipments-button'),
-                tabPending: document.getElementById('tab-pending'), tabCompleted: document.getElementById('tab-completed'),
-                pendingCount: document.getElementById('pending-count'), completedCount: document.getElementById('completed-count'),
-                pendingContent: document.getElementById('tab-content-pending'), completedContent: document.getElementById('tab-content-completed'),
+                tabPending: document.getElementById('tab-pending'), tabPartial: document.getElementById('tab-partial'), tabCompleted: document.getElementById('tab-completed'),
+                pendingCount: document.getElementById('pending-count'), partialCount: document.getElementById('partial-count'), completedCount: document.getElementById('completed-count'),
+                pendingContent: document.getElementById('tab-content-pending'), partialContent: document.getElementById('tab-content-partial'), completedContent: document.getElementById('tab-content-completed'),
                 deleteControls: document.getElementById('delete-controls'), selectionCounter: document.getElementById('selection-counter'),
                 deleteSelectedButton: document.getElementById('delete-selected-button'), cancelDeleteButton: document.getElementById('cancel-delete-button'),
                 checklistView: document.getElementById('checklist-view'), statsView: document.getElementById('stats-view'),
@@ -184,8 +193,12 @@
                 confirmDeleteText: document.getElementById('confirm-delete-text'),
                 confirmDeleteBtn: document.getElementById('confirm-delete-btn'),
                 cancelConfirmDeleteBtn: document.getElementById('cancel-confirm-delete-btn'),
-                boxTypeChartCanvas: document.getElementById('box-type-chart'),
-                shipmentStatusChartCanvas: document.getElementById('shipment-status-chart'),
+                startDateInput: document.getElementById('start-date'),
+                endDateInput: document.getElementById('end-date'),
+                resetFiltersButton: document.getElementById('reset-filters-button'),
+                itemSearchInput: document.getElementById('item-search-input'),
+                shipmentStatusChart: document.getElementById('shipment-status-chart'),
+                boxTypeChart: document.getElementById('box-type-chart'),
             };
 
             const toggleLoader = (show, text = '') => {
@@ -193,45 +206,59 @@
                 elements.loaderOverlay.style.display = show ? 'flex' : 'none';
             };
 
+            const applyFiltersAndRender = () => {
+                 const activeItemFilter = elements.itemStatsFilters.querySelector('.active')?.dataset.filter || 'all';
+                 const startDate = elements.startDateInput.value ? new Date(elements.startDateInput.value) : null;
+                 const endDate = elements.endDateInput.value ? new Date(elements.endDateInput.value) : null;
+                 if(startDate) startDate.setHours(0,0,0,0);
+                 if(endDate) endDate.setHours(23,59,59,999);
+                 const searchTerm = elements.itemSearchInput.value.toLowerCase();
+                 const filteredShipments = localShipmentsCache.filter(shipment => {
+                    if (!shipment.createdAt || typeof shipment.createdAt.toDate !== 'function') return true;
+                    const shipmentDate = shipment.createdAt.toDate();
+                    if (startDate && shipmentDate < startDate) return false;
+                    if (endDate && shipmentDate > endDate) return false;
+                    return true;
+                 });
+                 renderStatistics(filteredShipments, activeItemFilter, searchTerm);
+                 renderCharts(filteredShipments);
+            }
+
             const updateAllViews = (shipments) => {
                 renderAllShipments(shipments);
-                const activeFilter = elements.itemStatsFilters.querySelector('.active')?.dataset.filter || 'all';
-                renderStatistics(shipments, activeFilter);
+                applyFiltersAndRender();
             };
 
             const renderCharts = (shipments) => {
+                const pending = shipments.filter(s => s.boxes.every(b => !b.delivered)).length;
+                const partial = shipments.filter(s => s.boxes.some(b => b.delivered) && !s.boxes.every(b => b.delivered)).length;
+                const completed = shipments.filter(s => s.boxes.every(b => b.delivered)).length;
+                const statusData = [ {label: "Pendientes", value: pending, color: "#FBBF24"}, {label: "Parciales", value: partial, color: "#F87171"}, {label: "Completados", value: completed, color: "#34D399"} ];
+                drawPieChart('#shipment-status-chart', statusData);
                 const packsBoxes = shipments.filter(s => s.type === 'Pack').reduce((sum, s) => sum + (s.numberOfBoxes || 0), 0);
                 const b2bBoxes = shipments.filter(s => s.type !== 'Pack').reduce((sum, s) => sum + (s.numberOfBoxes || 0), 0);
-                const completedCount = shipments.filter(s => s.boxes.every(b => b.delivered)).length;
-                const pendingCount = shipments.length - completedCount;
-
-                if (boxTypeChart) boxTypeChart.destroy();
-                if (elements.boxTypeChartCanvas) {
-                    boxTypeChart = new Chart(elements.boxTypeChartCanvas, {
-                        type: 'pie',
-                        data: {
-                            labels: [`Packs (${packsBoxes})`, `B2B (${b2bBoxes})`],
-                            datasets: [{ data: [packsBoxes, b2bBoxes], backgroundColor: ['#3b82f6', '#22c55e'] }]
-                        },
-                        options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'top' }}}
-                    });
-                }
-
-                if (shipmentStatusChart) shipmentStatusChart.destroy();
-                if (elements.shipmentStatusChartCanvas) {
-                    shipmentStatusChart = new Chart(elements.shipmentStatusChartCanvas, {
-                        type: 'pie',
-                        data: {
-                            labels: [`Completados (${completedCount})`, `Pendientes (${pendingCount})`],
-                            datasets: [{ data: [completedCount, pendingCount], backgroundColor: ['#10b981', '#f59e0b'] }]
-                        },
-                         options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'top' }}}
-                    });
-                }
+                const boxData = [ {label: "Packs", value: packsBoxes, color: "#60A5FA"}, {label: "B2B", value: b2bBoxes, color: "#5EEAD4"} ];
+                drawPieChart('#box-type-chart', boxData);
             };
             
-            const renderStatistics = (shipments, itemFilter = 'all') => {
-                renderCharts(shipments);
+            const drawPieChart = (selector, data) => {
+                d3.select(selector).selectAll("*").remove(); 
+                const element = document.querySelector(selector);
+                if (!element || data.reduce((a, b) => a + b.value, 0) === 0) {
+                    element.innerHTML = `<div class="flex items-center justify-center h-full text-gray-400">No hay datos para mostrar</div>`;
+                    return;
+                }
+                const width = element.clientWidth; const height = element.clientHeight;
+                const radius = Math.min(width, height) / 2 - 20;
+                const svg = d3.select(selector).append("svg").attr("width", width).attr("height", height).append("g").attr("transform", `translate(${width / 2}, ${height / 2})`);
+                const pie = d3.pie().value(d => d.value);
+                const data_ready = pie(data);
+                const arc = d3.arc().innerRadius(radius * 0.5).outerRadius(radius);
+                svg.selectAll('slices').data(data_ready).enter().append('path').attr('d', arc).attr('fill', d => d.data.color).attr("stroke", "white").style("stroke-width", "2px");
+                svg.selectAll('slices').data(data_ready).enter().append('text').text(d => `${d.data.label} (${d.data.value})`).attr("transform", d => `translate(${arc.centroid(d)})`).style("text-anchor", "middle").style("font-size", 14).style("fill", "black").style("font-weight", "bold");
+            };
+
+            const renderStatistics = (shipments, itemFilter = 'all', searchTerm = '') => {
                 const packsData = shipments.filter(s => s.type === 'Pack');
                 const b2bData = shipments.filter(s => s.type !== 'Pack');
                 elements.packsShipmentsCount.textContent = packsData.length;
@@ -242,11 +269,13 @@
                 elements.b2bQuantityCount.textContent = b2bData.reduce((sum, s) => sum + (s.totalQuantity || 0), 0);
                 elements.statsCityName.textContent = currentCity;
                 
-                let filteredShipments = (itemFilter === 'all') ? shipments : shipments.filter(s => s.type === itemFilter);
+                let filteredShipmentsForItems = (itemFilter === 'all') ? shipments : shipments.filter(s => s.type === itemFilter);
                 const itemStats = {};
-                filteredShipments.forEach(s => {
+                filteredShipmentsForItems.forEach(s => {
                     if (s.items && Array.isArray(s.items)) {
                         s.items.forEach(item => {
+                            const description = item.description.trim().toLowerCase();
+                            if (searchTerm && !description.includes(searchTerm)) return;
                             const key = `${item.description.trim()} | ${item.size.trim()}`;
                             itemStats[key] = (itemStats[key] || 0) + item.quantity;
                         });
@@ -257,7 +286,7 @@
                 const statsContainer = elements.itemStatsContainer;
                 statsContainer.innerHTML = '';
                 if (sortedItems.length === 0) {
-                    statsContainer.innerHTML = `<p class="text-center text-gray-500 py-4">No hay datos de artículos para mostrar.</p>`;
+                    statsContainer.innerHTML = `<p class="text-center text-gray-500 py-4">No se encontraron artículos.</p>`;
                 } else {
                     const table = document.createElement('table');
                     table.className = 'w-full text-left table-auto';
@@ -274,12 +303,18 @@
             };
 
             const renderAllShipments = (shipments) => {
-                const pendingShipments = shipments.filter(s => !s.boxes.every(b => b.delivered));
+                const pendingShipments = shipments.filter(s => s.boxes.every(b => !b.delivered));
+                const partialShipments = shipments.filter(s => s.boxes.some(b => b.delivered) && !s.boxes.every(b => b.delivered));
                 const completedShipments = shipments.filter(s => s.boxes.every(b => b.delivered));
+                
                 elements.pendingCount.textContent = pendingShipments.length;
+                elements.partialCount.textContent = partialShipments.length;
                 elements.completedCount.textContent = completedShipments.length;
+                
                 renderShipmentList(pendingShipments, elements.pendingContent, 'No hay envíos pendientes.');
+                renderShipmentList(partialShipments, elements.partialContent, 'No hay envíos parcialmente recibidos.');
                 renderShipmentList(completedShipments, elements.completedContent, 'No hay envíos completados.');
+                
                 elements.managementSection.style.display = shipments.length > 0 ? 'block' : 'none';
             };
             
@@ -296,7 +331,7 @@
                     const isCompleted = shipment.boxes.every(b => b.delivered);
                     const isSelected = shipmentsToDelete.has(shipment.firestoreId);
                     let cardClasses = 'border-gray-200';
-                    if (isOverdue && !isCompleted) cardClasses = 'border-red-500 bg-red-50';
+                    if (isOverdue && !isCompleted && container === elements.partialContent) cardClasses = 'border-red-500 bg-red-50';
                     if (isSelected) cardClasses = 'border-blue-500 bg-blue-50';
                     const progressText = `${shipment.boxes.filter(b => b.delivered).length} / ${shipment.boxes.length}`;
                     const shipmentCard = document.createElement('div');
@@ -305,7 +340,7 @@
                     const typeLabel = type === 'Pack' ? `<span class="text-xs font-bold px-2 py-1 rounded-full bg-blue-200 text-blue-800">Pack</span>` : `<span class="text-xs font-bold px-2 py-1 rounded-full bg-green-200 text-green-800">B2B</span>`;
                     shipmentCard.innerHTML = `
                         ${isDeleteModeActive ? `<input type="checkbox" class="shipment-select-checkbox h-6 w-6 rounded border-gray-400 text-gray-800 focus:ring-gray-500 cursor-pointer mt-1" data-firestore-id="${shipment.firestoreId}" ${isSelected ? 'checked' : ''}>` : ''}
-                        <div class="flex-grow"><div class="border-b border-gray-200 pb-3 mb-3"><div class="flex justify-between items-start"><div><h3 class="text-xl font-bold text-gray-900">${shipment.orderDescription || 'Sin Descripción'}</h3><p class="text-sm text-gray-500">Shipping Order: ${shipment.id}</p><p class="text-sm text-gray-500">Fecha de envío: ${shipment.shippingDate}</p></div><div class="text-right space-y-2"><div class="font-bold text-sm px-3 py-1 rounded-full ${isCompleted ? 'bg-green-200 text-green-800' : `bg-yellow-200 text-yellow-800`}">${isCompleted ? 'Completado' : `Progreso: ${progressText}`}</div><div>${typeLabel}</div></div></div>${isOverdue && !isCompleted ? '<p class="text-sm font-bold text-red-600 mt-2">Este pedido lleva más de 7 días sin actualizarse.</p>' : ''}</div><div class="space-y-2 box-list"></div></div>`;
+                        <div class="flex-grow"><div class="border-b border-gray-200 pb-3 mb-3"><div class="flex justify-between items-start"><div><h3 class="text-xl font-bold text-gray-900">${shipment.orderDescription || 'Sin Descripción'}</h3><p class="text-sm text-gray-500">Shipping Order: ${shipment.id}</p><p class="text-sm text-gray-500">Fecha de envío: ${shipment.shippingDate}</p></div><div class="text-right space-y-2"><div class="font-bold text-sm px-3 py-1 rounded-full ${isCompleted ? 'bg-green-200 text-green-800' : `bg-yellow-200 text-yellow-800`}">${isCompleted ? 'Completado' : `Progreso: ${progressText}`}</div><div>${typeLabel}</div></div></div>${isOverdue && !isCompleted && container === elements.partialContent ? '<p class="text-sm font-bold text-red-600 mt-2">Este pedido lleva más de 7 días sin actualizarse.</p>' : ''}</div><div class="space-y-2 box-list"></div></div>`;
                     const boxListContainer = shipmentCard.querySelector('.box-list');
                     shipment.boxes.forEach(box => {
                         const label = document.createElement('label');
@@ -341,21 +376,32 @@
                 const packingListIndex = rawTextItems.indexOf('PACKING LIST');
                 if (packingListIndex !== -1) {
                     let currentIndex = packingListIndex;
-                     while (currentIndex < rawTextItems.length && rawTextItems[currentIndex] !== 'Box') { currentIndex++; }
+                    while (currentIndex < rawTextItems.length && rawTextItems[currentIndex] !== 'Weight') { currentIndex++; }
                     currentIndex++;
-                    while (currentIndex < rawTextItems.length) {
-                        if (/^\d{12}$/.test(rawTextItems[currentIndex])) {
-                            const code = rawTextItems[currentIndex];
-                            let description = rawTextItems[currentIndex + 1] || '';
-                            let size = rawTextItems[currentIndex + 2] || '';
-                            let quantityStr = rawTextItems[currentIndex + 3] || '0';
-                            let quantity = parseInt(quantityStr, 10);
-
-                            if (code && description && size && !isNaN(quantity)) {
-                                items.push({ code, description, size, quantity });
-                                currentIndex += 5; 
-                            } else { currentIndex++; }
-                        } else { currentIndex++; }
+                    while (currentIndex < rawTextItems.length && rawTextItems[currentIndex] !== 'ITEM RECAP') {
+                         if (/^\d{12}$/.test(rawTextItems[currentIndex])) {
+                            let itemData = { code: rawTextItems[currentIndex], description: '', size: '', quantity: 0 };
+                            let descParts = [];
+                            let k = currentIndex + 1;
+                            const possibleSizes = ['3XS', 'XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', 'TU'];
+                            while(k < rawTextItems.length && !possibleSizes.includes(rawTextItems[k].toUpperCase()) && !/^\d+$/.test(rawTextItems[k])) {
+                                descParts.push(rawTextItems[k]);
+                                k++;
+                            }
+                            itemData.description = descParts.join(' ');
+                            if (k < rawTextItems.length) {
+                                if (possibleSizes.includes(rawTextItems[k].toUpperCase())) {
+                                    itemData.size = rawTextItems[k];
+                                    k++;
+                                }
+                                const quantity = parseInt(rawTextItems[k], 10);
+                                if (!isNaN(quantity)) {
+                                    itemData.quantity = quantity;
+                                    items.push(itemData);
+                                }
+                            }
+                        }
+                        currentIndex++;
                     }
                 }
                 
@@ -368,20 +414,9 @@
             const handleFileSelect = async (files) => {
                 if (!files || files.length === 0 || !shipmentsCollectionRef) return;
                 toggleLoader(true, `Procesando ${files.length} archivo(s)...`);
-
-                const fileProcessingPromises = Array.from(files).map(file =>
-                    extractDataFromPdf(file).catch(error => {
-                        console.error(`Error al procesar el archivo ${file.name}:`, error);
-                        return null; 
-                    })
-                );
-
+                const fileProcessingPromises = Array.from(files).map(file => extractDataFromPdf(file).catch(error => { console.error(`Error procesando ${file.name}:`, error); return null; }));
                 const results = await Promise.all(fileProcessingPromises);
-                
-                const validNewShipmentsData = results.filter(data => 
-                    data && !localShipmentsCache.some(s => s.id === data.shippingOrderId)
-                );
-
+                const validNewShipmentsData = results.filter(data => data && !localShipmentsCache.some(s => s.id === data.shippingOrderId));
                 if (validNewShipmentsData.length > 0) {
                     const batch = window.firebaseSDK.writeBatch(db);
                     validNewShipmentsData.forEach(data => {
@@ -399,7 +434,6 @@
                     });
                     await batch.commit();
                 }
-                
                 toggleLoader(false);
                 elements.fileInput.value = null;
             };
@@ -460,13 +494,10 @@
             };
 
             const switchTab = (activeTab) => {
-                if (activeTab === 'pending') {
-                    elements.tabPending.classList.add('active'); elements.tabCompleted.classList.remove('active');
-                    elements.pendingContent.classList.add('active'); elements.completedContent.classList.remove('active');
-                } else {
-                    elements.tabPending.classList.remove('active'); elements.tabCompleted.classList.add('active');
-                    elements.pendingContent.classList.remove('active'); elements.completedContent.classList.add('active');
-                }
+                document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+                document.getElementById(`tab-${activeTab}`).classList.add('active');
+                document.getElementById(`tab-content-${activeTab}`).style.display = 'block';
             };
 
             const connectToFirebase = async (city) => {
@@ -512,13 +543,13 @@
 
             const switchView = (view) => {
                 currentView = view;
-                document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active'));
+                document.querySelectorAll('.app-view').forEach(v => v.style.display = 'none');
                 document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
                 if(view === 'checklist') {
-                    elements.checklistView.classList.add('active');
+                    elements.checklistView.style.display = 'block';
                     elements.navChecklist.classList.add('active');
                 } else if (view === 'stats') {
-                    elements.statsView.classList.add('active');
+                    elements.statsView.style.display = 'block';
                     elements.navStats.classList.add('active');
                 }
             };
@@ -545,8 +576,12 @@
                 
                 elements.uploadButton.addEventListener('click', () => elements.fileInput.click());
                 elements.fileInput.addEventListener('change', (event) => handleFileSelect(event.target.files));
-                elements.tabPending.addEventListener('click', () => switchTab('pending'));
-                elements.tabCompleted.addEventListener('click', () => switchTab('completed'));
+                
+                ['pending', 'partial', 'completed'].forEach(tabId => {
+                    const tab = document.getElementById(`tab-${tabId}`);
+                    if(tab) tab.addEventListener('click', () => switchTab(tabId));
+                });
+
                 elements.manageShipmentsButton.addEventListener('click', () => toggleDeleteMode(true));
                 elements.cancelDeleteButton.addEventListener('click', () => toggleDeleteMode(false));
                 elements.deleteSelectedButton.addEventListener('click', handleDeleteSelected);
@@ -561,11 +596,24 @@
                         const filter = e.target.dataset.filter;
                         elements.itemStatsFilters.querySelectorAll('button').forEach(btn => btn.classList.remove('active', 'bg-gray-800', 'text-white'));
                         e.target.classList.add('active', 'bg-gray-800', 'text-white');
-                        renderStatistics(localShipmentsCache, filter);
+                        applyFiltersAndRender();
                     }
                 });
-                elements.itemStatsFilters.querySelector('[data-filter="all"]').classList.add('active', 'bg-gray-800', 'text-white');
                 
+                ['change', 'input'].forEach(evt => {
+                    elements.startDateInput.addEventListener(evt, applyFiltersAndRender);
+                    elements.endDateInput.addEventListener(evt, applyFiltersAndRender);
+                    elements.itemSearchInput.addEventListener(evt, applyFiltersAndRender);
+                });
+
+                elements.resetFiltersButton.addEventListener('click', () => {
+                    elements.startDateInput.value = '';
+                    elements.endDateInput.value = '';
+                    elements.itemSearchInput.value = '';
+                    applyFiltersAndRender();
+                });
+                
+                elements.itemStatsFilters.querySelector('[data-filter="all"]').classList.add('active', 'bg-gray-800', 'text-white');
                 document.body.addEventListener('change', (e) => { handleCheckChange(e); handleShipmentSelect(e); });
             };
 
