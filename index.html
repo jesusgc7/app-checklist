@@ -21,20 +21,20 @@
 
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, getDocs, serverTimestamp, setLogLevel, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         
         window.firebaseConfig = firebaseConfig;
         window.firebaseSDK = {
             initializeApp, getApps, getApp,
             getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, getDocs, serverTimestamp, setLogLevel, writeBatch,
-            getAuth, signInAnonymously, onAuthStateChanged
+            getAuth, signInAnonymously
         };
     </script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Titillium+Web:wght@400;600;700;900&display=swap');
         body { font-family: 'Titillium Web', sans-serif; background-color: #f4f7f6; }
-        .modal-overlay,.loader-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background-color:rgba(0,0,0,.8);display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:9999;transition:opacity .3s}.loader{border:8px solid #e0e0e0;border-top:8px solid #111827;border-radius:50%;width:60px;height:60px;animation:spin 1s linear infinite}@keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}.tab-button{transition:all .2s ease-in-out;border-bottom:4px solid transparent}.tab-button.active{border-bottom-color:#111827;color:#111827}#menu-overlay{transition:opacity .3s ease-in-out}#side-menu{transition:transform .3s ease-in-out}
+        .modal-overlay,.loader-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background-color:rgba(0,0,0,.8);display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:9999;transition:opacity .3s}.loader{border:8px solid #e0e0e0;border-top:8px solid #111827;border-radius:50%;width:60px;height:60px;animation:spin 1s linear infinite}@keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}.tab-button{transition:all .2s ease-in-out;border-left:4px solid transparent; border-bottom: 4px solid transparent;}.tab-button.active{border-bottom-color:#111827;color:#111827; background-color: #f3f4f6;} @media (min-width: 768px) { .tab-button.active { border-left-color:#111827; border-bottom-color: transparent;} } #menu-overlay{transition:opacity .3s ease-in-out}#side-menu{transition:transform .3s ease-in-out}
         .tab-content { display: none; }
         .tab-content.active { display: block; }
     </style>
@@ -42,11 +42,11 @@
 <body class="antialiased pb-24">
     
     <div id="city-selector-view" class="fixed inset-0 bg-gray-800 flex flex-col justify-center items-center p-8 text-white z-50">
-        <h1 class="text-5xl font-black italic uppercase tracking-wider mb-4 text-center">ExtremaduraSport</h1>
+        <h1 class="text-4xl font-black italic uppercase tracking-wider mb-4 text-center">ExtremaduraSport</h1>
         <p class="text-xl text-gray-300 mb-12 text-center">Selecciona una sede para continuar</p>
         <div class="w-full max-w-sm space-y-4">
-            <button data-city="Cáceres" class="city-btn w-full bg-white text-gray-800 font-bold py-5 px-4 rounded-lg hover:bg-gray-200 transition-all text-2xl shadow-lg transform hover:scale-105">Cáceres</button>
-            <button data-city="Badajoz" class="city-btn w-full bg-white text-gray-800 font-bold py-5 px-4 rounded-lg hover:bg-gray-200 transition-all text-2xl shadow-lg transform hover:scale-105">Badajoz</button>
+            <button id="caceres-btn" data-city="Cáceres" class="city-btn w-full bg-white text-gray-800 font-bold py-5 px-4 rounded-lg hover:bg-gray-200 transition-all text-2xl shadow-lg transform hover:scale-105">Cáceres</button>
+            <button id="badajoz-btn" data-city="Badajoz" class="city-btn w-full bg-white text-gray-800 font-bold py-5 px-4 rounded-lg hover:bg-gray-200 transition-all text-2xl shadow-lg transform hover:scale-105">Badajoz</button>
         </div>
     </div>
 
@@ -69,7 +69,7 @@
             <div class="container mx-auto px-4 sm:px-6 py-3 flex justify-between items-center">
                  <button id="open-menu-button" class="p-2 -ml-2 text-gray-600 hover:text-gray-900"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button>
                  <div class="text-center">
-                    <h1 class="text-3xl font-black italic text-gray-900 uppercase tracking-wider">ExtremaduraSport</h1>
+                    <h1 class="text-2xl font-black italic text-gray-900 uppercase tracking-wider">ExtremaduraSport</h1>
                     <p id="city-display" class="text-sm font-semibold text-gray-500 uppercase tracking-widest"></p>
                  </div>
                  <div class="text-right">
@@ -82,23 +82,35 @@
             <div id="checklist-controls" class="bg-white p-4 rounded-xl shadow-lg mb-6 border border-gray-200">
                  <input type="search" id="box-search-input" placeholder="Buscar por los 4 últimos dígitos de la caja..." class="w-full border-2 border-gray-300 p-3 rounded-lg focus:border-black focus:ring-0">
             </div>
-            <div class="mb-6 border-b border-gray-300">
-                <nav class="flex -mb-px" aria-label="Tabs">
-                    <button id="tab-pending" class="tab-button active text-gray-500 hover:text-gray-700 whitespace-nowrap py-4 px-6 font-bold text-lg">Pendientes <span id="pending-count" class="ml-2 text-sm px-2 py-1 rounded-full bg-orange-200 text-orange-800">0</span></button>
-                    <button id="tab-partial" class="tab-button text-gray-500 hover:text-gray-700 whitespace-nowrap py-4 px-6 font-bold text-lg">Parcialmente Recibido <span id="partial-count" class="ml-2 text-sm px-2 py-1 rounded-full bg-yellow-200 text-yellow-800">0</span></button>
-                    <button id="tab-completed" class="tab-button text-gray-500 hover:text-gray-700 whitespace-nowrap py-4 px-6 font-bold text-lg">Completados <span id="completed-count" class="ml-2 text-sm px-2 py-1 rounded-full bg-green-200 text-green-800">0</span></button>
-                </nav>
-            </div>
             <div id="upload-panel" class="bg-white p-6 rounded-xl shadow-lg mb-8 border border-gray-200"><h2 class="text-2xl font-bold text-gray-800 mb-3">Cargar Documentos</h2><input type="file" accept=".pdf" id="file-input" class="hidden" multiple /><button id="upload-button" class="w-full bg-gray-800 text-white font-bold py-3 px-4 rounded-lg hover:bg-black transition-all text-lg flex items-center justify-center shadow-md"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>Cargar PDF(s)</button></div>
-            <div id="tab-content-pending" class="tab-content active space-y-6"></div>
-            <div id="tab-content-partial" class="tab-content space-y-6"></div>
-            <div id="tab-content-completed" class="tab-content space-y-6"></div>
+            
+            <div class="md:flex md:gap-6">
+                <nav class="flex flex-row overflow-x-auto md:flex-col md:w-1/4 mb-6 md:mb-0 border-b md:border-b-0 md:border-r border-gray-300" aria-label="Tabs">
+                    <button id="tab-pending" class="tab-button active text-gray-500 hover:text-gray-700 w-full text-left p-4 font-bold text-lg flex-shrink-0">Pendientes <span id="pending-count" class="ml-2 text-sm px-2 py-1 rounded-full bg-orange-200 text-orange-800">0</span></button>
+                    <button id="tab-partial" class="tab-button text-gray-500 hover:text-gray-700 w-full text-left p-4 font-bold text-lg flex-shrink-0">Parcialmente Recibido <span id="partial-count" class="ml-2 text-sm px-2 py-1 rounded-full bg-yellow-200 text-yellow-800">0</span></button>
+                    <button id="tab-completed" class="tab-button text-gray-500 hover:text-gray-700 w-full text-left p-4 font-bold text-lg flex-shrink-0">Completados <span id="completed-count" class="ml-2 text-sm px-2 py-1 rounded-full bg-green-200 text-green-800">0</span></button>
+                </nav>
+
+                <div class="md:w-3/4">
+                    <div id="tab-content-pending" class="tab-content active space-y-6"></div>
+                    <div id="tab-content-partial" class="tab-content space-y-6"></div>
+                    <div id="tab-content-completed" class="tab-content space-y-6"></div>
+                </div>
+            </div>
+
             <div id="management-section" class="mt-12 text-center" style="display: none;"><button id="manage-shipments-button" class="bg-transparent text-gray-500 hover:text-black hover:underline font-semibold py-2 px-4 rounded-lg transition-all text-sm">Gestionar Envíos</button></div>
         </main>
     </div>
     
     <div id="delete-controls" class="fixed bottom-0 left-0 w-full bg-gray-800 text-white p-4 shadow-lg transform translate-y-full transition-transform z-50" style="display: none;">
-        <div class="container mx-auto flex justify-between items-center"><span id="selection-counter" class="font-bold">0 envíos seleccionados</span><div class="space-x-4"><button id="delete-selected-button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-5 rounded-lg disabled:bg-gray-500 disabled:cursor-not-allowed" disabled>Eliminar</button><button id="cancel-delete-button" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-5 rounded-lg">Cancelar</button></div></div>
+        <div class="container mx-auto flex justify-between items-center flex-wrap gap-4">
+            <span id="selection-counter" class="font-bold">0 envíos seleccionados</span>
+            <div class="flex space-x-4">
+                <button id="select-all-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-5 rounded-lg">Seleccionar Todo</button>
+                <button id="delete-selected-button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-5 rounded-lg disabled:bg-gray-500 disabled:cursor-not-allowed" disabled>Eliminar</button>
+                <button id="cancel-delete-button" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-5 rounded-lg">Cancelar</button>
+            </div>
+        </div>
     </div>
     
     <div id="confirm-delete-modal" class="modal-overlay" style="display: none;">
@@ -116,15 +128,12 @@
 
     <script type="module">
         document.addEventListener('DOMContentLoaded', () => {
-            const APP_VERSION = "v5.0";
-            let db, auth;
-            let shipmentsCollectionRef;
-            let localShipmentsCache = [];
-            let unsubscribeFromShipments;
-            let currentCity = '';
-            let isDeleteModeActive = false;
-            let shipmentsToDelete = new Set();
-            const projectId = "extremadurasport-checklist";
+            const APP_VERSION = "v5.2";
+            let db; let shipmentsCollectionRef; let localShipmentsCache = [];
+            let unsubscribeFromShipments; let currentCity = '';
+            let isDeleteModeActive = false; let shipmentsToDelete = new Set(); 
+            let initialClassifications = new Map();
+            const projectId = "extremadurasport-checklist"; 
 
             const elements = {
                 citySelectorView: document.getElementById('city-selector-view'),
@@ -141,6 +150,7 @@
                 pendingContent: document.getElementById('tab-content-pending'), partialContent: document.getElementById('tab-content-partial'), completedContent: document.getElementById('tab-content-completed'),
                 deleteControls: document.getElementById('delete-controls'), selectionCounter: document.getElementById('selection-counter'),
                 deleteSelectedButton: document.getElementById('delete-selected-button'), cancelDeleteButton: document.getElementById('cancel-delete-button'),
+                selectAllButton: document.getElementById('select-all-button'),
                 confirmDeleteModal: document.getElementById('confirm-delete-modal'),
                 confirmDeleteText: document.getElementById('confirm-delete-text'),
                 confirmDeleteBtn: document.getElementById('confirm-delete-btn'),
@@ -160,9 +170,9 @@
             };
 
             const renderAllShipments = (shipments) => {
-                const pendingShipments = shipments.filter(s => s.boxes.every(b => !b.delivered));
-                const partialShipments = shipments.filter(s => s.boxes.some(b => b.delivered) && !s.boxes.every(b => b.delivered));
-                const completedShipments = shipments.filter(s => s.boxes.every(b => b.delivered));
+                const pendingShipments = shipments.filter(s => initialClassifications.get(s.firestoreId) === 'pending');
+                const partialShipments = shipments.filter(s => initialClassifications.get(s.firestoreId) === 'partial');
+                const completedShipments = shipments.filter(s => initialClassifications.get(s.firestoreId) === 'completed');
                 
                 elements.pendingCount.textContent = pendingShipments.length;
                 elements.partialCount.textContent = partialShipments.length;
@@ -178,8 +188,7 @@
             const renderShipmentList = (shipmentList, container, emptyText) => {
                 container.innerHTML = '';
                 if (shipmentList.length === 0) {
-                    container.innerHTML = `<p class="text-center text-gray-500 py-8 text-xl">${emptyText}</p>`;
-                    return;
+                    container.innerHTML = `<p class="text-center text-gray-500 py-8 text-xl">${emptyText}</p>`; return;
                 }
                 shipmentList.sort((a, b) => (b.createdAt?.toDate?.() || 0) - (a.createdAt?.toDate?.() || 0));
                 const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
@@ -196,7 +205,7 @@
                     shipmentCard.className = `p-4 sm:p-6 rounded-xl shadow-lg border-l-4 transition-all ${cardClasses} flex items-start space-x-4`;
                     shipmentCard.innerHTML = `
                         ${isDeleteModeActive ? `<input type="checkbox" class="shipment-select-checkbox h-6 w-6 rounded border-gray-400 text-gray-800 focus:ring-gray-500 cursor-pointer mt-1" data-firestore-id="${shipment.firestoreId}" ${isSelected ? 'checked' : ''}>` : ''}
-                        <div class="flex-grow"><div class="border-b border-gray-200 pb-3 mb-3"><div class="flex justify-between items-start"><div><h3 class="text-xl font-bold text-gray-900">${shipment.orderDescription || 'Sin Descripción'}</h3><p class="text-sm text-gray-500">Shipping Order: ${shipment.id}</p><p class="text-sm text-gray-500">Fecha de envío: ${shipment.shippingDate}</p></div><div class="text-right space-y-2"><div class="font-bold text-sm px-3 py-1 rounded-full ${isCompleted ? 'bg-green-200 text-green-800' : `bg-yellow-200 text-yellow-800`}">${isCompleted ? 'Completado' : `Progreso: ${progressText}`}</div></div></div>${isOverdue && !isCompleted && container === elements.partialContent ? '<p class="text-sm font-bold text-red-600 mt-2">Este pedido lleva más de 7 días sin actualizarse.</p>' : ''}</div><div class="space-y-2 box-list"></div></div>`;
+                        <div class="flex-grow"><div class="border-b border-gray-200 pb-3 mb-3"><div class="flex justify-between items-start"><div><h3 class="text-xl font-bold text-gray-900">${shipment.orderDescription || 'Sin Descripción'}</h3><p class="text-sm text-gray-500">Shipping Order: ${shipment.id} | Fecha: ${shipment.shippingDate}</p><p class="text-sm text-gray-400 italic">${shipment.fileName}</p></div><div class="text-right space-y-2"><div class="font-bold text-sm px-3 py-1 rounded-full ${isCompleted ? 'bg-green-200 text-green-800' : `bg-yellow-200 text-yellow-800`}">${isCompleted ? 'Completado' : `Progreso: ${progressText}`}</div></div></div>${isOverdue && !isCompleted && container === elements.partialContent ? '<p class="text-sm font-bold text-red-600 mt-2">Este pedido lleva más de 7 días sin actualizarse.</p>' : ''}</div><div class="space-y-2 box-list"></div></div>`;
                     const boxListContainer = shipmentCard.querySelector('.box-list');
                     shipment.boxes.forEach(box => {
                         const label = document.createElement('label');
@@ -220,8 +229,10 @@
                 }
                 const fullText = rawTextItems.join(' ');
 
-                const orderIdRegex = /Shipping Order\s*([A-Z0-9]+)/i; const dateRegex = /Shipping date\s*,\s*"?([0-9/]+)"?/i;
-                const boxIdRegex = /ND\d{10}/g; const descRegex = /Order Description\s*([A-Z0-9-]+)/i;
+                const orderIdRegex = /Shipping Order\s*([A-Z0-9]+)/i;
+                const dateRegex = /(?:Shipping date|Shipment date)\s*[^A-Z0-9]*([0-9\/]+)/i;
+                const boxIdRegex = /ND\d{10}/g; 
+                const descRegex = /Order Description\s*([A-Z0-9-]+)/i;
                 
                 const orderIdMatch = fullText.match(orderIdRegex); const shippingOrderId = orderIdMatch ? orderIdMatch[1] : `Desconocido-${Date.now()}`;
                 const dateMatch = fullText.match(dateRegex); const shippingDate = dateMatch ? dateMatch[1] : "N/A";
@@ -230,7 +241,7 @@
                 
                 return { shippingOrderId, shippingDate, boxIds: uniqueBoxIds, orderDescription, fileName: file.name };
             };
-            
+
             const handleFileSelect = async (files) => {
                 if (!files || files.length === 0 || !shipmentsCollectionRef) return;
                 toggleLoader(true, `Procesando ${files.length} archivo(s)...`);
@@ -284,6 +295,9 @@
                 const count = shipmentsToDelete.size;
                 elements.selectionCounter.textContent = `${count} envío(s) seleccionado(s)`;
                 elements.deleteSelectedButton.disabled = count === 0;
+                const allVisibleShipments = getVisibleShipmentIds();
+                const allSelected = allVisibleShipments.length > 0 && allVisibleShipments.every(id => shipmentsToDelete.has(id));
+                elements.selectAllButton.textContent = allSelected ? 'Deseleccionar Todo' : 'Seleccionar Todo';
             };
             
             const handleShipmentSelect = (event) => {
@@ -293,6 +307,26 @@
                     if (target.checked) shipmentsToDelete.add(firestoreId); else shipmentsToDelete.delete(firestoreId);
                     updateDeleteControls(); updateAllViews(localShipmentsCache);
                 }
+            };
+
+            const getVisibleShipmentIds = () => {
+                 const searchTerm = elements.boxSearchInput.value.trim();
+                return localShipmentsCache
+                    .filter(s => searchTerm.length < 4 || s.boxes.some(b => b.id.endsWith(searchTerm)))
+                    .map(s => s.firestoreId);
+            };
+
+            const handleSelectAllToggle = () => {
+                const visibleShipmentIds = getVisibleShipmentIds();
+                const allSelected = visibleShipmentIds.length > 0 && visibleShipmentIds.every(id => shipmentsToDelete.has(id));
+
+                if (allSelected) {
+                    visibleShipmentIds.forEach(id => shipmentsToDelete.delete(id));
+                } else {
+                    visibleShipmentIds.forEach(id => shipmentsToDelete.add(id));
+                }
+                updateDeleteControls();
+                updateAllViews(localShipmentsCache);
             };
 
             const handleDeleteSelected = () => {
@@ -319,48 +353,22 @@
                 document.getElementById(`tab-content-${activeTab}`).style.display = 'block';
             };
 
-            const listenToCityData = (city) => {
-                if (unsubscribeFromShipments) {
-                    unsubscribeFromShipments();
-                    unsubscribeFromShipments = null;
-                }
-                const { collection, onSnapshot, getDocs } = window.firebaseSDK;
-                const collectionPath = `projects/${projectId}/data/${city.toLowerCase()}/shipments`;
-                shipmentsCollectionRef = collection(db, collectionPath);
+            const connectToFirebase = async (city) => {
+                const { initializeApp, getFirestore, collection, onSnapshot, getAuth, signInAnonymously, setLogLevel, getApps, getApp } = window.firebaseSDK;
                 
-                // Fetch initial data to render immediately
-                getDocs(shipmentsCollectionRef).then(snapshot => {
-                    localShipmentsCache = snapshot.docs.map(doc => ({ firestoreId: doc.id, ...doc.data() }));
-                    updateAllViews(localShipmentsCache);
-                    toggleLoader(false);
-                });
-
-                // Set up the listener for subsequent changes, but DON'T re-render immediately
-                unsubscribeFromShipments = onSnapshot(shipmentsCollectionRef, (snapshot) => {
-                    localShipmentsCache = snapshot.docs.map(doc => ({ firestoreId: doc.id, ...doc.data() }));
-                    // Only update counts in background, don't trigger a full re-render
-                    const pending = localShipmentsCache.filter(s => s.boxes.every(b => !b.delivered)).length;
-                    const partial = localShipmentsCache.filter(s => s.boxes.some(b => b.delivered) && !s.boxes.every(b => b.delivered)).length;
-                    const completed = localShipmentsCache.filter(s => s.boxes.every(b => b.delivered)).length;
-                    elements.pendingCount.textContent = pending;
-                    elements.partialCount.textContent = partial;
-                    elements.completedCount.textContent = completed;
-                });
-            };
-
-            const showApp = (city) => {
+                if (!window.firebaseConfig || !window.firebaseConfig.projectId) {
+                    alert("La configuración de Firebase no está disponible. No se puede conectar.");
+                    return;
+                }
+                
+                toggleLoader(true, `Conectando a ${city}...`);
                 currentCity = city;
                 localStorage.setItem('extremaduraSportSelectedCity', city);
                 elements.cityDisplay.textContent = city;
                 elements.citySelectorView.style.display = 'none';
                 elements.appWrapper.style.display = 'block';
                 elements.sideMenuContainer.style.display = 'block';
-                listenToCityData(city);
-            };
-
-            const initializeAppAndAuth = async () => {
-                const { initializeApp, getApps, getApp, getAuth, signInAnonymously, onAuthStateChanged, setLogLevel } = window.firebaseSDK;
-                toggleLoader(true, "Inicializando conexión...");
+                
                 try {
                     let app;
                     if (getApps().length === 0) {
@@ -368,34 +376,49 @@
                     } else {
                         app = getApp();
                     }
-                    db = window.firebaseSDK.getFirestore(app);
-                    auth = getAuth(app);
+                    db = getFirestore(app);
+                    const auth = getAuth(app);
                     setLogLevel('error');
                     
-                    onAuthStateChanged(auth, (user) => {
-                        if (user) {
-                            const savedCity = localStorage.getItem('extremaduraSportSelectedCity');
-                            if (savedCity) {
-                                showApp(savedCity);
-                            } else {
-                                showCitySelector();
+                    if (!auth.currentUser) {
+                        await signInAnonymously(auth);
+                    }
+                    
+                    if (unsubscribeFromShipments) { 
+                        unsubscribeFromShipments(); 
+                        unsubscribeFromShipments = null; 
+                    }
+
+                    const collectionPath = `projects/${projectId}/data/${city.toLowerCase()}/shipments`;
+                    shipmentsCollectionRef = collection(db, collectionPath);
+                    unsubscribeFromShipments = onSnapshot(shipmentsCollectionRef, (snapshot) => {
+                        localShipmentsCache = snapshot.docs.map(doc => ({ firestoreId: doc.id, ...doc.data() }));
+                        
+                        initialClassifications.clear();
+                        localShipmentsCache.forEach(s => {
+                            const totalBoxes = s.boxes.length;
+                            const deliveredBoxes = s.boxes.filter(b => b.delivered).length;
+                            let status = 'pending';
+                            if (deliveredBoxes === totalBoxes && totalBoxes > 0) {
+                                status = 'completed';
+                            } else if (deliveredBoxes > 0) {
+                                status = 'partial';
                             }
-                        } else {
-                             signInAnonymously(auth);
-                        }
+                            initialClassifications.set(s.firestoreId, status);
+                        });
+
+                        updateAllViews(localShipmentsCache);
+                        toggleLoader(false);
+                    }, error => {
+                        console.error("Error de Firestore:", error);
+                        alert("No se pudo conectar a la base de datos.");
+                        toggleLoader(false);
                     });
-                } catch(error) {
+                } catch (error) {
                     console.error("Firebase init failed:", error);
                     alert("Error fatal. Refresca la página.");
                     toggleLoader(false);
                 }
-            };
-
-            const showCitySelector = () => {
-                toggleLoader(false);
-                elements.citySelectorView.style.display = 'flex';
-                elements.appWrapper.style.display = 'none';
-                elements.sideMenuContainer.style.display = 'none';
             };
             
             const toggleMenu = (show) => {
@@ -410,16 +433,25 @@
             
             const main = () => {
                 elements.appVersion.textContent = APP_VERSION;
-                initializeAppAndAuth();
-                
-                document.querySelectorAll('.city-btn').forEach(btn => {
-                    btn.addEventListener('click', () => showApp(btn.dataset.city));
-                });
+                const savedCity = localStorage.getItem('extremaduraSportSelectedCity');
+                if (savedCity) {
+                    connectToFirebase(savedCity);
+                } else {
+                    elements.citySelectorView.style.display = 'flex';
+                    elements.appWrapper.style.display = 'none';
+                    elements.sideMenuContainer.style.display = 'none';
+                }
                 
                 elements.openMenuButton.addEventListener('click', () => toggleMenu(true));
                 elements.closeMenuButton.addEventListener('click', () => toggleMenu(false));
                 elements.menuOverlay.addEventListener('click', () => toggleMenu(false));
                 
+                document.querySelectorAll('.city-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        connectToFirebase(btn.dataset.city);
+                    });
+                });
+
                 elements.changeCityButton.addEventListener('click', () => {
                     localStorage.removeItem('extremaduraSportSelectedCity');
                     location.reload();
@@ -436,6 +468,7 @@
                 elements.manageShipmentsButton.addEventListener('click', () => toggleDeleteMode(true));
                 elements.cancelDeleteButton.addEventListener('click', () => toggleDeleteMode(false));
                 elements.deleteSelectedButton.addEventListener('click', handleDeleteSelected);
+                elements.selectAllButton.addEventListener('click', handleSelectAllToggle);
                 elements.confirmDeleteBtn.addEventListener('click', executeDelete);
                 elements.cancelConfirmDeleteBtn.addEventListener('click', () => { elements.confirmDeleteModal.style.display = 'none'; });
                 elements.boxSearchInput.addEventListener('input', () => updateAllViews(localShipmentsCache));
