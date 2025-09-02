@@ -229,32 +229,44 @@
                 elements.loaderOverlay.style.display = show ? 'flex' : 'none';
             };
 
-            const updateAllViews = (shipments) => {
+            const applyAllFilters = () => {
                 const searchTerm = elements.boxSearchInput.value.trim();
-                const filteredShipments = searchTerm.length >= 4 ? shipments.filter(s => s.boxes.some(b => b.id.endsWith(searchTerm))) : shipments;
-                renderAllShipments(filteredShipments);
-                generateAndRenderNotifications(shipments);
+                const dateFilter = elements.dateFilterInput.value;
+                
+                let filteredShipments = localShipmentsCache;
+
+                if (searchTerm.length >= 4) {
+                    filteredShipments = filteredShipments.filter(s => s.boxes.some(b => b.id.endsWith(searchTerm)));
+                }
+
+                if (dateFilter) {
+                    const filterDate = dateFilter.split('-').reverse().join('/');
+                    filteredShipments = filteredShipments.filter(s => s.shippingDate === filterDate);
+                }
+                
+                updateAllViews(filteredShipments);
+            };
+
+            const updateAllViews = (shipments) => {
+                renderAllShipments(shipments);
+                generateAndRenderNotifications(localShipmentsCache); // Notifications should always check the full list
             };
 
             const renderAllShipments = (shipments) => {
-                const pendingShipments = shipments.filter(s => initialClassifications.get(s.firestoreId) === 'pending');
-                const partialShipments = shipments.filter(s => initialClassifications.get(s.firestoreId) === 'partial');
-                const completedShipments = shipments.filter(s => initialClassifications.get(s.firestoreId) === 'completed');
-                
-                elements.pendingCount.textContent = pendingShipments.length;
-                elements.partialCount.textContent = partialShipments.length;
-                elements.completedCount.textContent = completedShipments.length;
+                elements.pendingCount.textContent = localShipmentsCache.filter(s => initialClassifications.get(s.firestoreId) === 'pending').length;
+                elements.partialCount.textContent = localShipmentsCache.filter(s => initialClassifications.get(s.firestoreId) === 'partial').length;
+                elements.completedCount.textContent = localShipmentsCache.filter(s => initialClassifications.get(s.firestoreId) === 'completed').length;
                 
                 let listToRender;
                 let emptyText = '';
                 switch(currentStatusFilter) {
-                    case 'pending': listToRender = pendingShipments; emptyText = 'No hay envíos pendientes.'; break;
-                    case 'partial': listToRender = partialShipments; emptyText = 'No hay envíos parcialmente recibidos.'; break;
-                    case 'completed': listToRender = completedShipments; emptyText = 'No hay envíos completados.'; break;
+                    case 'pending': listToRender = shipments.filter(s => initialClassifications.get(s.firestoreId) === 'pending'); emptyText = 'No hay envíos pendientes.'; break;
+                    case 'partial': listToRender = shipments.filter(s => initialClassifications.get(s.firestoreId) === 'partial'); emptyText = 'No hay envíos parcialmente recibidos.'; break;
+                    case 'completed': listToRender = shipments.filter(s => initialClassifications.get(s.firestoreId) === 'completed'); emptyText = 'No hay envíos completados.'; break;
                 }
                 
                 renderShipmentList(listToRender, elements.shipmentListContainer, emptyText);
-                elements.managementSection.style.display = shipments.length > 0 ? 'block' : 'none';
+                elements.managementSection.style.display = localShipmentsCache.length > 0 ? 'block' : 'none';
             };
             
             const renderShipmentList = (shipmentList, container, emptyText) => {
@@ -469,13 +481,6 @@
                 elements.confirmDeleteModal.style.display = 'none';
             };
 
-            const switchTab = (activeTab) => {
-                currentStatusFilter = activeTab;
-                document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
-                document.getElementById(`tab-${activeTab}`).classList.add('active');
-                updateAllViews(localShipmentsCache);
-            };
-
             const connectToFirebase = async (city) => {
                 const { initializeApp, getFirestore, collection, onSnapshot, getAuth, signInAnonymously, setLogLevel, getApps, getApp } = window.firebaseSDK;
                 
@@ -593,9 +598,16 @@
                 elements.uploadButton.addEventListener('click', () => elements.fileInput.click());
                 elements.fileInput.addEventListener('change', (event) => handleFileSelect(event.target.files));
                 
-                 ['pending', 'partial', 'completed'].forEach(tabId => {
-                    const tab = document.getElementById(`tab-${tabId}`);
-                    if(tab) tab.addEventListener('click', () => switchTab(tabId));
+                elements.statusFilters.addEventListener('click', (e) => {
+                    const link = e.target.closest('.nav-link');
+                    if(link){
+                        e.preventDefault();
+                        currentStatusFilter = link.dataset.filter;
+                        elements.statusFilters.querySelectorAll('a').forEach(a => a.classList.remove('active'));
+                        link.classList.add('active');
+                        updateAllViews(localShipmentsCache);
+                        toggleMenu(false);
+                    }
                 });
 
                 elements.manageShipmentsButton.addEventListener('click', () => toggleDeleteMode(true));
@@ -605,6 +617,11 @@
                 elements.confirmDeleteBtn.addEventListener('click', executeDelete);
                 elements.cancelConfirmDeleteBtn.addEventListener('click', () => { elements.confirmDeleteModal.style.display = 'none'; });
                 elements.boxSearchInput.addEventListener('input', () => updateAllViews(localShipmentsCache));
+                elements.dateFilterInput.addEventListener('change', applyAllFilters);
+                elements.clearDateFilter.addEventListener('click', () => {
+                    elements.dateFilterInput.value = '';
+                    applyAllFilters();
+                });
                 
                 elements.navChecklist.addEventListener('click', (e) => { e.preventDefault(); switchView('checklist'); toggleMenu(false); });
                 elements.navScanner.addEventListener('click', (e) => { e.preventDefault(); switchView('scanner'); toggleMenu(false); });
