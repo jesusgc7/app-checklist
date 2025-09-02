@@ -6,7 +6,6 @@
     <title>Checklist de Recepción - ExtremaduraSport</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <script src="https://unpkg.com/html5-qrcode/html5-qrcode.min.js"></script>
     
     <script type="module">
         // --- Configuración de Firebase ---
@@ -131,8 +130,6 @@
                         <label for="scanner-input" class="block text-sm font-medium text-gray-700 mb-1">Escanear con lector externo:</label>
                         <input type="text" id="scanner-input" placeholder="Haz clic aquí y escanea un código..." class="w-full border-2 border-gray-300 p-3 rounded-lg focus:border-black focus:ring-0">
                     </div>
-                    <div id="scanner-container" class="w-full max-w-lg mx-auto bg-gray-200 rounded-lg overflow-hidden aspect-video my-4"></div>
-                    <button id="scanner-toggle-btn" class="w-full bg-gray-800 text-white font-bold py-3 px-4 rounded-lg hover:bg-black transition-all text-lg">Iniciar Escáner con Cámara</button>
                     <div id="scanner-progress-container" class="mt-4 hidden">
                         <p id="scanner-progress-label" class="text-center font-semibold mb-2"></p>
                         <div class="w-full bg-gray-200 rounded-full h-4">
@@ -181,8 +178,7 @@
             let isDeleteModeActive = false; let shipmentsToDelete = new Set(); 
             let initialClassifications = new Map();
             let currentStatusFilter = 'pending';
-            let html5QrCode;
-            let isScannerRunning = false;
+            let scanTimeout;
             const projectId = "extremadurasport-checklist"; 
 
             const elements = {
@@ -215,8 +211,7 @@
                 navScanner: document.getElementById('nav-scanner'),
                 checklistView: document.getElementById('checklist-view'),
                 scannerView: document.getElementById('scanner-view'),
-                scannerContainer: document.getElementById('scanner-container'),
-                scannerToggleBtn: document.getElementById('scanner-toggle-btn'),
+                scannerInput: document.getElementById('scanner-input'),
                 scannerProgressContainer: document.getElementById('scanner-progress-container'),
                 scannerProgressBar: document.getElementById('scanner-progress-bar'),
                 scannerProgressLabel: document.getElementById('scanner-progress-label'),
@@ -226,7 +221,6 @@
                 scanFeedbackType: document.getElementById('scan-feedback-type'),
                 dateFilterInput: document.getElementById('date-filter-input'),
                 clearDateFilter: document.getElementById('clear-date-filter'),
-                scannerInput: document.getElementById('scanner-input'),
             };
 
             const toggleLoader = (show, text = '') => {
@@ -258,6 +252,8 @@
             };
 
             const renderAllShipments = (shipments) => {
+                if(!elements.pendingCount) return; // Safeguard if elements are not ready
+                
                 const pendingShipments = shipments.filter(s => initialClassifications.get(s.firestoreId) === 'pending');
                 const partialShipments = shipments.filter(s => initialClassifications.get(s.firestoreId) === 'partial');
                 const completedShipments = shipments.filter(s => initialClassifications.get(s.firestoreId) === 'completed');
@@ -279,6 +275,7 @@
             };
             
             const renderShipmentList = (shipmentList, container, emptyText) => {
+                if(!container) return;
                 container.innerHTML = '';
                 if (shipmentList.length === 0) {
                     container.innerHTML = `<p class="text-center text-gray-500 py-8 text-xl">${emptyText}</p>`; return;
@@ -573,9 +570,6 @@
                 document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
                 document.getElementById(`${view}-view`).classList.add('active');
                 document.getElementById(`nav-${view}`).classList.add('active');
-                if (view === 'checklist' && isScannerRunning) {
-                    stopScanner();
-                }
             };
             
             const main = () => {
