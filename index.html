@@ -230,12 +230,12 @@
                 const fullText = rawTextItems.join(' ');
 
                 const orderIdRegex = /Shipping Order\s*([A-Z0-9]+)/i;
-                const dateRegex = /(?:Shipping date|Shipment date)\s*[^A-Z0-9]*([0-9\/]+)/i;
+                const dateRegex = /(\d{1,2}\/\d{1,2}\/\d{4})/;
                 const boxIdRegex = /ND\d{10}/g; 
                 const descRegex = /Order Description\s*([A-Z0-9-]+)/i;
                 
                 const orderIdMatch = fullText.match(orderIdRegex); const shippingOrderId = orderIdMatch ? orderIdMatch[1] : `Desconocido-${Date.now()}`;
-                const dateMatch = fullText.match(dateRegex); const shippingDate = dateMatch ? dateMatch[1] : "N/A";
+                const dateMatch = fullText.match(dateRegex); const shippingDate = dateMatch ? dateMatch[0] : "N/A";
                 const descMatch = fullText.match(descRegex); const orderDescription = descMatch ? descMatch[1] : "Sin Descripción";
                 const boxIdMatches = fullText.match(boxIdRegex); const uniqueBoxIds = boxIdMatches ? [...new Set(boxIdMatches)] : [];
                 
