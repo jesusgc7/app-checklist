@@ -6,6 +6,7 @@
     <title>Checklist de Recepción - ExtremaduraSport</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode/html5-qrcode.min.js"></script>
     
     <script type="module">
         // --- Configuración de Firebase ---
@@ -34,9 +35,10 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Titillium+Web:wght@400;600;700;900&display=swap');
         body { font-family: 'Titillium Web', sans-serif; background-color: #f4f7f6; }
-        .modal-overlay,.loader-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background-color:rgba(0,0,0,.8);display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:9999;transition:opacity .3s}.loader{border:8px solid #e0e0e0;border-top:8px solid #111827;border-radius:50%;width:60px;height:60px;animation:spin 1s linear infinite}@keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}.tab-button{transition:all .2s ease-in-out;border-left:4px solid transparent; border-bottom: 4px solid transparent;}.tab-button.active{border-bottom-color:#111827;color:#111827; background-color: #f3f4f6;} @media (min-width: 768px) { .tab-button.active { border-left-color:#111827; border-bottom-color: transparent;} } #menu-overlay{transition:opacity .3s ease-in-out}#side-menu{transition:transform .3s ease-in-out}
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
+        .modal-overlay,.loader-overlay,.feedback-overlay{position:fixed;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:9999;transition:opacity .3s}.loader{border:8px solid #e0e0e0;border-top:8px solid #111827;border-radius:50%;width:60px;height:60px;animation:spin 1s linear infinite}@keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}#menu-overlay{transition:opacity .3s ease-in-out}#side-menu{transition:transform .3s ease-in-out}
+        .app-view { display: none; }
+        .app-view.active { display: block; }
+        .nav-link.active{background-color:#f3f4f6;font-weight:700}
     </style>
 </head>
 <body class="antialiased pb-24">
@@ -55,6 +57,21 @@
         <div id="side-menu" class="fixed top-0 left-0 h-full w-80 bg-white shadow-xl z-50 transform -translate-x-full">
             <div class="p-6 flex flex-col h-full">
                 <h2 class="text-2xl font-bold text-gray-800 mb-6">Menú</h2>
+                <nav class="mb-8">
+                    <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Vistas</h3>
+                    <div class="space-y-1">
+                        <a href="#" id="nav-checklist" data-view="checklist" class="nav-link flex items-center p-3 rounded-lg text-gray-700 hover:bg-gray-100 active">Checklist</a>
+                        <a href="#" id="nav-scanner" data-view="scanner" class="nav-link flex items-center p-3 rounded-lg text-gray-700 hover:bg-gray-100">Escáner de Cajas</a>
+                    </div>
+                </nav>
+                 <nav class="mb-8">
+                    <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Filtros de Estado</h3>
+                    <div class="space-y-1" id="status-filters">
+                         <a href="#" data-filter="pending" class="nav-link flex items-center justify-between p-3 rounded-lg text-gray-700 hover:bg-gray-100 active"><span>Pendientes</span><span id="pending-count" class="ml-2 text-sm px-2 py-1 rounded-full bg-orange-200 text-orange-800">0</span></a>
+                         <a href="#" data-filter="partial" class="nav-link flex items-center justify-between p-3 rounded-lg text-gray-700 hover:bg-gray-100"><span>Parcialmente Recibido</span><span id="partial-count" class="ml-2 text-sm px-2 py-1 rounded-full bg-yellow-200 text-yellow-800">0</span></a>
+                         <a href="#" data-filter="completed" class="nav-link flex items-center justify-between p-3 rounded-lg text-gray-700 hover:bg-gray-100"><span>Completados</span><span id="completed-count" class="ml-2 text-sm px-2 py-1 rounded-full bg-green-200 text-green-800">0</span></a>
+                    </div>
+                </nav>
                 <div class="mt-auto">
                     <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Configuración</h3>
                     <button id="change-city-button" class="w-full bg-gray-200 text-gray-800 font-bold py-3 px-4 rounded-lg hover:bg-gray-300 transition-all text-lg">Cambiar Sede</button>
@@ -72,33 +89,54 @@
                     <h1 class="text-2xl font-black italic text-gray-900 uppercase tracking-wider">ExtremaduraSport</h1>
                     <p id="city-display" class="text-sm font-semibold text-gray-500 uppercase tracking-widest"></p>
                  </div>
-                 <div class="text-right">
-                    <span id="app-version" class="text-xs font-bold text-gray-400"></span>
+                 <div class="flex items-center gap-4">
+                    <span id="app-version" class="text-xs font-bold text-gray-400 hidden sm:block"></span>
+                    <div class="relative">
+                        <button id="notification-bell" class="relative p-2 text-gray-600 hover:text-gray-900">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                            <span id="notification-badge" class="absolute top-0 right-0 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center" style="display: none;">0</span>
+                        </button>
+                        <div id="notification-panel" class="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl p-4 z-50 hidden">
+                            <div class="flex justify-between items-center mb-2">
+                                <h3 class="font-bold text-lg">Notificaciones</h3>
+                                <button id="clear-notifications-btn" class="text-sm text-red-500 hover:underline">Limpiar Todo</button>
+                            </div>
+                            <div id="notification-list" class="max-h-64 overflow-y-auto"></div>
+                        </div>
+                    </div>
                  </div>
             </div>
         </header>
 
         <main id="main-content" class="container mx-auto p-4 md:p-6 pb-20">
-            <div id="checklist-controls" class="bg-white p-4 rounded-xl shadow-lg mb-6 border border-gray-200">
-                 <input type="search" id="box-search-input" placeholder="Buscar por los 4 últimos dígitos de la caja..." class="w-full border-2 border-gray-300 p-3 rounded-lg focus:border-black focus:ring-0">
-            </div>
-            <div id="upload-panel" class="bg-white p-6 rounded-xl shadow-lg mb-8 border border-gray-200"><h2 class="text-2xl font-bold text-gray-800 mb-3">Cargar Documentos</h2><input type="file" accept=".pdf" id="file-input" class="hidden" multiple /><button id="upload-button" class="w-full bg-gray-800 text-white font-bold py-3 px-4 rounded-lg hover:bg-black transition-all text-lg flex items-center justify-center shadow-md"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>Cargar PDF(s)</button></div>
-            
-            <div class="md:flex md:gap-6">
-                <nav class="flex flex-row overflow-x-auto md:flex-col md:w-1/4 mb-6 md:mb-0 border-b md:border-b-0 md:border-r border-gray-300" aria-label="Tabs">
-                    <button id="tab-pending" class="tab-button active text-gray-500 hover:text-gray-700 w-full text-left p-4 font-bold text-lg flex-shrink-0">Pendientes <span id="pending-count" class="ml-2 text-sm px-2 py-1 rounded-full bg-orange-200 text-orange-800">0</span></button>
-                    <button id="tab-partial" class="tab-button text-gray-500 hover:text-gray-700 w-full text-left p-4 font-bold text-lg flex-shrink-0">Parcialmente Recibido <span id="partial-count" class="ml-2 text-sm px-2 py-1 rounded-full bg-yellow-200 text-yellow-800">0</span></button>
-                    <button id="tab-completed" class="tab-button text-gray-500 hover:text-gray-700 w-full text-left p-4 font-bold text-lg flex-shrink-0">Completados <span id="completed-count" class="ml-2 text-sm px-2 py-1 rounded-full bg-green-200 text-green-800">0</span></button>
-                </nav>
+            <div id="checklist-view" class="app-view active">
+                 <div class="bg-white p-4 rounded-xl shadow-lg mb-6 border border-gray-200 space-y-4">
+                    <input type="search" id="box-search-input" placeholder="Buscar por los 4 últimos dígitos de la caja..." class="w-full border-2 border-gray-300 p-3 rounded-lg focus:border-black focus:ring-0">
+                    <div class="flex flex-col sm:flex-row gap-4">
+                       <input type="date" id="date-filter-input" class="w-full border-2 border-gray-300 p-3 rounded-lg focus:border-black focus:ring-0">
+                       <button id="clear-date-filter" class="w-full sm:w-auto bg-gray-200 text-gray-800 font-bold py-3 px-4 rounded-lg hover:bg-gray-300 transition-all">Limpiar Filtro</button>
+                    </div>
+                </div>
+                <div id="upload-panel" class="bg-white p-6 rounded-xl shadow-lg mb-8 border border-gray-200"><h2 class="text-2xl font-bold text-gray-800 mb-3">Cargar Documentos</h2><input type="file" accept=".pdf" id="file-input" class="hidden" multiple /><button id="upload-button" class="w-full bg-gray-800 text-white font-bold py-3 px-4 rounded-lg hover:bg-black transition-all text-lg flex items-center justify-center shadow-md"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>Cargar PDF(s)</button></div>
+                
+                <div id="shipment-list-container" class="space-y-6"></div>
 
-                <div class="md:w-3/4">
-                    <div id="tab-content-pending" class="tab-content active space-y-6"></div>
-                    <div id="tab-content-partial" class="tab-content space-y-6"></div>
-                    <div id="tab-content-completed" class="tab-content space-y-6"></div>
+                <div id="management-section" class="mt-12 text-center" style="display: none;"><button id="manage-shipments-button" class="bg-transparent text-gray-500 hover:text-black hover:underline font-semibold py-2 px-4 rounded-lg transition-all text-sm">Gestionar Envíos</button></div>
+            </div>
+
+            <div id="scanner-view" class="app-view">
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-4">Escáner de Cajas</h2>
+                    <div id="scanner-container" class="w-full max-w-lg mx-auto bg-gray-200 rounded-lg overflow-hidden aspect-video mb-4"></div>
+                    <button id="scanner-toggle-btn" class="w-full bg-gray-800 text-white font-bold py-3 px-4 rounded-lg hover:bg-black transition-all text-lg">Iniciar Escáner</button>
+                    <div id="scanner-progress-container" class="mt-4 hidden">
+                        <p id="scanner-progress-label" class="text-center font-semibold mb-2"></p>
+                        <div class="w-full bg-gray-200 rounded-full h-4">
+                            <div id="scanner-progress-bar" class="bg-blue-500 h-4 rounded-full transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
-
-            <div id="management-section" class="mt-12 text-center" style="display: none;"><button id="manage-shipments-button" class="bg-transparent text-gray-500 hover:text-black hover:underline font-semibold py-2 px-4 rounded-lg transition-all text-sm">Gestionar Envíos</button></div>
         </main>
     </div>
     
@@ -125,14 +163,22 @@
     </div>
 
     <div id="loader-overlay" class="loader-overlay" style="display: none;"><div class="loader"></div><p id="loader-text" class="text-white text-lg mt-4 font-semibold"></p></div>
+    <div id="scan-feedback-overlay" class="feedback-overlay pointer-events-none opacity-0 transition-opacity duration-300 text-white flex flex-col justify-center items-center">
+        <p id="scan-feedback-order" class="text-3xl font-bold mb-2"></p>
+        <p id="scan-feedback-digits" class="text-9xl font-black"></p>
+        <p id="scan-feedback-type" class="text-2xl font-semibold mt-2"></p>
+    </div>
 
     <script type="module">
         document.addEventListener('DOMContentLoaded', () => {
-            const APP_VERSION = "v5.2";
+            const APP_VERSION = "v6.0";
             let db; let shipmentsCollectionRef; let localShipmentsCache = [];
             let unsubscribeFromShipments; let currentCity = '';
             let isDeleteModeActive = false; let shipmentsToDelete = new Set(); 
             let initialClassifications = new Map();
+            let currentStatusFilter = 'pending';
+            let html5QrCode;
+            let isScannerRunning = false;
             const projectId = "extremadurasport-checklist"; 
 
             const elements = {
@@ -145,9 +191,8 @@
                 uploadButton: document.getElementById('upload-button'), fileInput: document.getElementById('file-input'),
                 loaderOverlay: document.getElementById('loader-overlay'), loaderText: document.getElementById('loader-text'),
                 managementSection: document.getElementById('management-section'), manageShipmentsButton: document.getElementById('manage-shipments-button'),
-                tabPending: document.getElementById('tab-pending'), tabPartial: document.getElementById('tab-partial'), tabCompleted: document.getElementById('tab-completed'),
                 pendingCount: document.getElementById('pending-count'), partialCount: document.getElementById('partial-count'), completedCount: document.getElementById('completed-count'),
-                pendingContent: document.getElementById('tab-content-pending'), partialContent: document.getElementById('tab-content-partial'), completedContent: document.getElementById('tab-content-completed'),
+                shipmentListContainer: document.getElementById('shipment-list-container'),
                 deleteControls: document.getElementById('delete-controls'), selectionCounter: document.getElementById('selection-counter'),
                 deleteSelectedButton: document.getElementById('delete-selected-button'), cancelDeleteButton: document.getElementById('cancel-delete-button'),
                 selectAllButton: document.getElementById('select-all-button'),
@@ -156,6 +201,27 @@
                 confirmDeleteBtn: document.getElementById('confirm-delete-btn'),
                 cancelConfirmDeleteBtn: document.getElementById('cancel-confirm-delete-btn'),
                 boxSearchInput: document.getElementById('box-search-input'),
+                statusFilters: document.getElementById('status-filters'),
+                notificationBell: document.getElementById('notification-bell'),
+                notificationBadge: document.getElementById('notification-badge'),
+                notificationPanel: document.getElementById('notification-panel'),
+                notificationList: document.getElementById('notification-list'),
+                clearNotificationsBtn: document.getElementById('clear-notifications-btn'),
+                navChecklist: document.getElementById('nav-checklist'),
+                navScanner: document.getElementById('nav-scanner'),
+                checklistView: document.getElementById('checklist-view'),
+                scannerView: document.getElementById('scanner-view'),
+                scannerContainer: document.getElementById('scanner-container'),
+                scannerToggleBtn: document.getElementById('scanner-toggle-btn'),
+                scannerProgressContainer: document.getElementById('scanner-progress-container'),
+                scannerProgressBar: document.getElementById('scanner-progress-bar'),
+                scannerProgressLabel: document.getElementById('scanner-progress-label'),
+                scanFeedbackOverlay: document.getElementById('scan-feedback-overlay'),
+                scanFeedbackDigits: document.getElementById('scan-feedback-digits'),
+                scanFeedbackOrder: document.getElementById('scan-feedback-order'),
+                scanFeedbackType: document.getElementById('scan-feedback-type'),
+                dateFilterInput: document.getElementById('date-filter-input'),
+                clearDateFilter: document.getElementById('clear-date-filter'),
             };
 
             const toggleLoader = (show, text = '') => {
@@ -167,6 +233,7 @@
                 const searchTerm = elements.boxSearchInput.value.trim();
                 const filteredShipments = searchTerm.length >= 4 ? shipments.filter(s => s.boxes.some(b => b.id.endsWith(searchTerm))) : shipments;
                 renderAllShipments(filteredShipments);
+                generateAndRenderNotifications(shipments);
             };
 
             const renderAllShipments = (shipments) => {
@@ -178,10 +245,15 @@
                 elements.partialCount.textContent = partialShipments.length;
                 elements.completedCount.textContent = completedShipments.length;
                 
-                renderShipmentList(pendingShipments, elements.pendingContent, 'No hay envíos pendientes.');
-                renderShipmentList(partialShipments, elements.partialContent, 'No hay envíos parcialmente recibidos.');
-                renderShipmentList(completedShipments, elements.completedContent, 'No hay envíos completados.');
+                let listToRender;
+                let emptyText = '';
+                switch(currentStatusFilter) {
+                    case 'pending': listToRender = pendingShipments; emptyText = 'No hay envíos pendientes.'; break;
+                    case 'partial': listToRender = partialShipments; emptyText = 'No hay envíos parcialmente recibidos.'; break;
+                    case 'completed': listToRender = completedShipments; emptyText = 'No hay envíos completados.'; break;
+                }
                 
+                renderShipmentList(listToRender, elements.shipmentListContainer, emptyText);
                 elements.managementSection.style.display = shipments.length > 0 ? 'block' : 'none';
             };
             
@@ -190,30 +262,55 @@
                 if (shipmentList.length === 0) {
                     container.innerHTML = `<p class="text-center text-gray-500 py-8 text-xl">${emptyText}</p>`; return;
                 }
-                shipmentList.sort((a, b) => (b.createdAt?.toDate?.() || 0) - (a.createdAt?.toDate?.() || 0));
-                const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-                shipmentList.forEach(shipment => {
-                    const hasValidTimestamp = shipment.lastUpdated && typeof shipment.lastUpdated.toDate === 'function';
-                    const isOverdue = hasValidTimestamp && shipment.lastUpdated.toDate().getTime() < sevenDaysAgo;
-                    const isCompleted = shipment.boxes.every(b => b.delivered);
-                    const isSelected = shipmentsToDelete.has(shipment.firestoreId);
-                    let cardClasses = 'border-gray-200';
-                    if (isOverdue && !isCompleted && container === elements.partialContent) cardClasses = 'border-red-500 bg-red-50';
-                    if (isSelected) cardClasses = 'border-blue-500 bg-blue-50';
-                    const progressText = `${shipment.boxes.filter(b => b.delivered).length} / ${shipment.boxes.length}`;
-                    const shipmentCard = document.createElement('div');
-                    shipmentCard.className = `p-4 sm:p-6 rounded-xl shadow-lg border-l-4 transition-all ${cardClasses} flex items-start space-x-4`;
-                    shipmentCard.innerHTML = `
-                        ${isDeleteModeActive ? `<input type="checkbox" class="shipment-select-checkbox h-6 w-6 rounded border-gray-400 text-gray-800 focus:ring-gray-500 cursor-pointer mt-1" data-firestore-id="${shipment.firestoreId}" ${isSelected ? 'checked' : ''}>` : ''}
-                        <div class="flex-grow"><div class="border-b border-gray-200 pb-3 mb-3"><div class="flex justify-between items-start"><div><h3 class="text-xl font-bold text-gray-900">${shipment.orderDescription || 'Sin Descripción'}</h3><p class="text-sm text-gray-500">Shipping Order: ${shipment.id} | Fecha: ${shipment.shippingDate}</p><p class="text-sm text-gray-400 italic">${shipment.fileName}</p></div><div class="text-right space-y-2"><div class="font-bold text-sm px-3 py-1 rounded-full ${isCompleted ? 'bg-green-200 text-green-800' : `bg-yellow-200 text-yellow-800`}">${isCompleted ? 'Completado' : `Progreso: ${progressText}`}</div></div></div>${isOverdue && !isCompleted && container === elements.partialContent ? '<p class="text-sm font-bold text-red-600 mt-2">Este pedido lleva más de 7 días sin actualizarse.</p>' : ''}</div><div class="space-y-2 box-list"></div></div>`;
-                    const boxListContainer = shipmentCard.querySelector('.box-list');
-                    shipment.boxes.forEach(box => {
-                        const label = document.createElement('label');
-                        label.className = `flex items-center p-3 rounded-lg transition-all duration-300 ${isDeleteModeActive ? 'cursor-default' : 'cursor-pointer hover:bg-gray-50'} ${box.delivered ? 'bg-gray-100 text-gray-500' : 'bg-white'}`;
-                        label.innerHTML = `<input type="checkbox" ${box.delivered ? 'checked' : ''} class="h-6 w-6 rounded border-gray-400 text-gray-800 focus:ring-gray-500 ${isDeleteModeActive ? 'cursor-not-allowed' : 'cursor-pointer'}" data-firestore-id="${shipment.firestoreId}" data-box-id="${box.id}" ${isDeleteModeActive ? 'disabled' : ''}><div class="ml-4 flex-grow ${box.delivered ? 'line-through' : ''}"><p class="font-bold text-lg font-mono">${box.id}</p></div>`;
-                        boxListContainer.appendChild(label);
+                const groupedByDate = shipmentList.reduce((acc, shipment) => {
+                    const date = shipment.shippingDate || 'Sin Fecha';
+                    if (!acc[date]) {
+                        acc[date] = [];
+                    }
+                    acc[date].push(shipment);
+                    return acc;
+                }, {});
+
+                const sortedDates = Object.keys(groupedByDate).sort((a, b) => {
+                     const dateA = a.split('/').reverse().join('-');
+                     const dateB = b.split('/').reverse().join('-');
+                     return new Date(dateB) - new Date(dateA);
+                });
+
+                sortedDates.forEach(date => {
+                    const dateHeader = document.createElement('h2');
+                    dateHeader.className = "text-xl font-bold text-gray-700 pb-2 mb-4 border-b-2 border-gray-300";
+                    dateHeader.textContent = date;
+                    container.appendChild(dateHeader);
+
+                    const shipmentsForDate = groupedByDate[date];
+                    shipmentsForDate.sort((a, b) => (b.createdAt?.toDate?.() || 0) - (a.createdAt?.toDate?.() || 0));
+                    
+                    shipmentsForDate.forEach(shipment => {
+                        const hasValidTimestamp = shipment.lastUpdated && typeof shipment.lastUpdated.toDate === 'function';
+                        const isOverdue = hasValidTimestamp && (Date.now() - shipment.lastUpdated.toDate().getTime()) > (7 * 24 * 60 * 60 * 1000);
+                        const isCompleted = shipment.boxes.every(b => b.delivered);
+                        const isSelected = shipmentsToDelete.has(shipment.firestoreId);
+                        let cardClasses = 'border-gray-200';
+                        if (isOverdue && !isCompleted && initialClassifications.get(shipment.firestoreId) === 'partial') cardClasses = 'border-red-500 bg-red-50';
+                        if (isSelected) cardClasses = 'border-blue-500 bg-blue-50';
+                        const progressText = `${shipment.boxes.filter(b => b.delivered).length} / ${shipment.boxes.length}`;
+                        const shipmentCard = document.createElement('div');
+                        shipmentCard.className = `p-4 sm:p-6 rounded-xl shadow-lg border-l-4 transition-all ${cardClasses} flex items-start space-x-4`;
+                        const type = shipment.type || 'B2B';
+                        const typeLabel = type === 'Pack' ? `<span class="text-xs font-bold px-2 py-1 rounded-full bg-blue-200 text-blue-800">Pack</span>` : `<span class="text-xs font-bold px-2 py-1 rounded-full bg-green-200 text-green-800">B2B</span>`;
+                        shipmentCard.innerHTML = `
+                            ${isDeleteModeActive ? `<input type="checkbox" class="shipment-select-checkbox h-6 w-6 rounded border-gray-400 text-gray-800 focus:ring-gray-500 cursor-pointer mt-1" data-firestore-id="${shipment.firestoreId}" ${isSelected ? 'checked' : ''}>` : ''}
+                            <div class="flex-grow"><div class="border-b border-gray-200 pb-3 mb-3"><div class="flex justify-between items-start"><div><h3 class="text-xl font-bold text-gray-900">${shipment.orderDescription || 'Sin Descripción'}</h3><p class="text-sm text-gray-500">Shipping Order: ${shipment.id} | Fecha: ${shipment.shippingDate}</p><p class="text-sm text-gray-400 italic">${shipment.fileName}</p></div><div class="text-right space-y-2"><div class="font-bold text-sm px-3 py-1 rounded-full ${isCompleted ? 'bg-green-200 text-green-800' : `bg-yellow-200 text-yellow-800`}">${isCompleted ? 'Completado' : `Progreso: ${progressText}`}</div><div>${typeLabel}</div></div></div>${isOverdue && !isCompleted && initialClassifications.get(shipment.firestoreId) === 'partial' ? '<p class="text-sm font-bold text-red-600 mt-2">Este pedido lleva más de 7 días sin actualizarse.</p>' : ''}</div><div class="space-y-2 box-list"></div></div>`;
+                        const boxListContainer = shipmentCard.querySelector('.box-list');
+                        shipment.boxes.forEach(box => {
+                            const label = document.createElement('label');
+                            label.className = `flex items-center p-3 rounded-lg transition-all duration-300 ${isDeleteModeActive ? 'cursor-default' : 'cursor-pointer hover:bg-gray-50'} ${box.delivered ? 'bg-gray-100 text-gray-500' : 'bg-white'}`;
+                            label.innerHTML = `<input type="checkbox" ${box.delivered ? 'checked' : ''} class="h-6 w-6 rounded border-gray-400 text-gray-800 focus:ring-gray-500 ${isDeleteModeActive ? 'cursor-not-allowed' : 'cursor-pointer'}" data-firestore-id="${shipment.firestoreId}" data-box-id="${box.id}" ${isDeleteModeActive ? 'disabled' : ''}><div class="ml-4 flex-grow ${box.delivered ? 'line-through' : ''}"><p class="font-bold text-lg font-mono">${box.id}</p></div>`;
+                            boxListContainer.appendChild(label);
+                        });
+                        container.appendChild(shipmentCard);
                     });
-                    container.appendChild(shipmentCard);
                 });
             };
 
@@ -238,8 +335,9 @@
                 const dateMatch = fullText.match(dateRegex); const shippingDate = dateMatch ? dateMatch[0] : "N/A";
                 const descMatch = fullText.match(descRegex); const orderDescription = descMatch ? descMatch[1] : "Sin Descripción";
                 const boxIdMatches = fullText.match(boxIdRegex); const uniqueBoxIds = boxIdMatches ? [...new Set(boxIdMatches)] : [];
+                const type = orderDescription.startsWith('CS-') ? 'Pack' : 'B2B';
                 
-                return { shippingOrderId, shippingDate, boxIds: uniqueBoxIds, orderDescription, fileName: file.name };
+                return { shippingOrderId, shippingDate, boxIds: uniqueBoxIds, orderDescription, fileName: file.name, type };
             };
 
             const handleFileSelect = async (files) => {
@@ -253,7 +351,7 @@
                     validNewShipmentsData.forEach(data => {
                         const newDocRef = window.firebaseSDK.doc(shipmentsCollectionRef);
                         const newShipment = {
-                            id: data.shippingOrderId, orderDescription: data.orderDescription, 
+                            id: data.shippingOrderId, orderDescription: data.orderDescription, type: data.type,
                             fileName: data.fileName, shippingDate: data.shippingDate, 
                             sortableDate: data.shippingDate.split('/').reverse().join('-'),
                             boxes: data.boxIds.map(id => ({ id, delivered: false })), 
@@ -266,6 +364,31 @@
                 }
                 toggleLoader(false);
                 elements.fileInput.value = null;
+            };
+
+             const generateAndRenderNotifications = (shipments) => {
+                const notifications = [];
+                const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+                shipments.forEach(shipment => {
+                    if (shipment.createdAt && typeof shipment.createdAt.toDate === 'function' && shipment.createdAt.toDate().getTime() < sevenDaysAgo) {
+                        shipment.boxes.forEach(box => {
+                            if (!box.delivered) {
+                                notifications.push(`¡Atención! La caja ${box.id} lleva una semana sin actualizarse. Deberías comprobarlo.`);
+                            }
+                        });
+                    }
+                });
+
+                if (notifications.length > 0) {
+                    elements.notificationBadge.textContent = notifications.length;
+                    elements.notificationBadge.style.display = 'flex';
+                } else {
+                    elements.notificationBadge.style.display = 'none';
+                }
+
+                elements.notificationList.innerHTML = notifications.length > 0 
+                    ? notifications.map(n => `<div class="p-2 border-b border-gray-200 text-sm">${n}</div>`).join('')
+                    : '<p class="text-gray-500 text-center p-4">No hay notificaciones</p>';
             };
 
             const handleCheckChange = async (event) => {
@@ -347,10 +470,10 @@
             };
 
             const switchTab = (activeTab) => {
+                currentStatusFilter = activeTab;
                 document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
-                document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
                 document.getElementById(`tab-${activeTab}`).classList.add('active');
-                document.getElementById(`tab-content-${activeTab}`).style.display = 'block';
+                updateAllViews(localShipmentsCache);
             };
 
             const connectToFirebase = async (city) => {
@@ -388,7 +511,7 @@
                         unsubscribeFromShipments(); 
                         unsubscribeFromShipments = null; 
                     }
-
+                    
                     const collectionPath = `projects/${projectId}/data/${city.toLowerCase()}/shipments`;
                     shipmentsCollectionRef = collection(db, collectionPath);
                     unsubscribeFromShipments = onSnapshot(shipmentsCollectionRef, (snapshot) => {
@@ -428,6 +551,16 @@
                 } else {
                     elements.menuOverlay.classList.add('hidden');
                     elements.sideMenu.classList.add('-translate-x-full');
+                }
+            };
+
+            const switchView = (view) => {
+                document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active'));
+                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                document.getElementById(`${view}-view`).classList.add('active');
+                document.getElementById(`nav-${view}`).classList.add('active');
+                if (view === 'checklist' && isScannerRunning) {
+                    stopScanner();
                 }
             };
             
@@ -473,6 +606,16 @@
                 elements.cancelConfirmDeleteBtn.addEventListener('click', () => { elements.confirmDeleteModal.style.display = 'none'; });
                 elements.boxSearchInput.addEventListener('input', () => updateAllViews(localShipmentsCache));
                 
+                elements.navChecklist.addEventListener('click', (e) => { e.preventDefault(); switchView('checklist'); toggleMenu(false); });
+                elements.navScanner.addEventListener('click', (e) => { e.preventDefault(); switchView('scanner'); toggleMenu(false); });
+                
+                 elements.notificationBell.addEventListener('click', () => elements.notificationPanel.classList.toggle('hidden'));
+                elements.clearNotificationsBtn.addEventListener('click', () => {
+                    elements.notificationList.innerHTML = '<p class="text-gray-500 text-center p-4">No hay notificaciones</p>';
+                    elements.notificationBadge.style.display = 'none';
+                    elements.notificationPanel.classList.add('hidden');
+                });
+
                 document.body.addEventListener('change', (e) => { handleCheckChange(e); handleShipmentSelect(e); });
             };
 
