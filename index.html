@@ -127,8 +127,12 @@
             <div id="scanner-view" class="app-view">
                 <div class="bg-white p-6 rounded-xl shadow-lg">
                     <h2 class="text-3xl font-bold text-gray-800 mb-4">Escáner de Cajas</h2>
-                    <div id="scanner-container" class="w-full max-w-lg mx-auto bg-gray-200 rounded-lg overflow-hidden aspect-video mb-4"></div>
-                    <button id="scanner-toggle-btn" class="w-full bg-gray-800 text-white font-bold py-3 px-4 rounded-lg hover:bg-black transition-all text-lg">Iniciar Escáner</button>
+                     <div class="mb-4">
+                        <label for="scanner-input" class="block text-sm font-medium text-gray-700 mb-1">Escanear con lector externo:</label>
+                        <input type="text" id="scanner-input" placeholder="Haz clic aquí y escanea un código..." class="w-full border-2 border-gray-300 p-3 rounded-lg focus:border-black focus:ring-0">
+                    </div>
+                    <div id="scanner-container" class="w-full max-w-lg mx-auto bg-gray-200 rounded-lg overflow-hidden aspect-video my-4"></div>
+                    <button id="scanner-toggle-btn" class="w-full bg-gray-800 text-white font-bold py-3 px-4 rounded-lg hover:bg-black transition-all text-lg">Iniciar Escáner con Cámara</button>
                     <div id="scanner-progress-container" class="mt-4 hidden">
                         <p id="scanner-progress-label" class="text-center font-semibold mb-2"></p>
                         <div class="w-full bg-gray-200 rounded-full h-4">
@@ -222,6 +226,7 @@
                 scanFeedbackType: document.getElementById('scan-feedback-type'),
                 dateFilterInput: document.getElementById('date-filter-input'),
                 clearDateFilter: document.getElementById('clear-date-filter'),
+                scannerInput: document.getElementById('scanner-input'),
             };
 
             const toggleLoader = (show, text = '') => {
@@ -620,7 +625,7 @@
                 elements.selectAllButton.addEventListener('click', handleSelectAllToggle);
                 elements.confirmDeleteBtn.addEventListener('click', executeDelete);
                 elements.cancelConfirmDeleteBtn.addEventListener('click', () => { elements.confirmDeleteModal.style.display = 'none'; });
-                elements.boxSearchInput.addEventListener('input', () => updateAllViews(localShipmentsCache));
+                elements.boxSearchInput.addEventListener('input', applyAllFilters);
                 elements.dateFilterInput.addEventListener('change', applyAllFilters);
                 elements.clearDateFilter.addEventListener('click', () => {
                     elements.dateFilterInput.value = '';
