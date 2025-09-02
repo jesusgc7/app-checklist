@@ -230,10 +230,14 @@
             };
 
             const applyAllFilters = () => {
+                updateAllViews(localShipmentsCache);
+            }
+
+            const updateAllViews = (shipments) => {
                 const searchTerm = elements.boxSearchInput.value.trim();
                 const dateFilter = elements.dateFilterInput.value;
                 
-                let filteredShipments = localShipmentsCache;
+                let filteredShipments = shipments;
 
                 if (searchTerm.length >= 4) {
                     filteredShipments = filteredShipments.filter(s => s.boxes.some(b => b.id.endsWith(searchTerm)));
@@ -244,15 +248,15 @@
                     filteredShipments = filteredShipments.filter(s => s.shippingDate === filterDate);
                 }
                 
-                updateAllViews(filteredShipments);
-            };
-
-            const updateAllViews = (shipments) => {
-                renderAllShipments(shipments);
-                generateAndRenderNotifications(localShipmentsCache); // Notifications should always check the full list
+                renderAllShipments(filteredShipments);
+                generateAndRenderNotifications(shipments);
             };
 
             const renderAllShipments = (shipments) => {
+                const pendingShipments = shipments.filter(s => initialClassifications.get(s.firestoreId) === 'pending');
+                const partialShipments = shipments.filter(s => initialClassifications.get(s.firestoreId) === 'partial');
+                const completedShipments = shipments.filter(s => initialClassifications.get(s.firestoreId) === 'completed');
+                
                 elements.pendingCount.textContent = localShipmentsCache.filter(s => initialClassifications.get(s.firestoreId) === 'pending').length;
                 elements.partialCount.textContent = localShipmentsCache.filter(s => initialClassifications.get(s.firestoreId) === 'partial').length;
                 elements.completedCount.textContent = localShipmentsCache.filter(s => initialClassifications.get(s.firestoreId) === 'completed').length;
@@ -260,9 +264,9 @@
                 let listToRender;
                 let emptyText = '';
                 switch(currentStatusFilter) {
-                    case 'pending': listToRender = shipments.filter(s => initialClassifications.get(s.firestoreId) === 'pending'); emptyText = 'No hay envíos pendientes.'; break;
-                    case 'partial': listToRender = shipments.filter(s => initialClassifications.get(s.firestoreId) === 'partial'); emptyText = 'No hay envíos parcialmente recibidos.'; break;
-                    case 'completed': listToRender = shipments.filter(s => initialClassifications.get(s.firestoreId) === 'completed'); emptyText = 'No hay envíos completados.'; break;
+                    case 'pending': listToRender = pendingShipments; emptyText = 'No hay envíos pendientes.'; break;
+                    case 'partial': listToRender = partialShipments; emptyText = 'No hay envíos parcialmente recibidos.'; break;
+                    case 'completed': listToRender = completedShipments; emptyText = 'No hay envíos completados.'; break;
                 }
                 
                 renderShipmentList(listToRender, elements.shipmentListContainer, emptyText);
