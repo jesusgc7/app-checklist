@@ -116,7 +116,7 @@
                        <button id="clear-date-filter" class="w-full sm:w-auto bg-gray-200 text-gray-800 font-bold py-3 px-4 rounded-lg hover:bg-gray-300 transition-all">Limpiar Filtro</button>
                     </div>
                 </div>
-                <div id="upload-panel" class="bg-white p-6 rounded-xl shadow-lg mb-8 border border-gray-200"><h2 class="text-2xl font-bold text-gray-800 mb-3">Cargar Documentos</h2><input type="file" accept=".pdf" id="file-input" class="hidden" multiple /><button id="upload-button" class="w-full bg-gray-800 text-white font-bold py-3 px-4 rounded-lg hover:bg-black transition-all text-lg flex items-center justify-center shadow-md"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>Cargar PDF(s)</button></div>
+                <div id="upload-panel" class="bg-white p-6 rounded-xl shadow-lg mb-8 border border-gray-200"><h2 class="text-2xl font-bold text-gray-800 mb-3">Cargar Documentos</h2><input type="file" accept=".pdf" id="file-input" class="hidden" multiple /><button id="upload-button" class="w-full bg-gray-800 text-white font-bold py-3 px-4 rounded-lg hover:bg-black transition-all text-lg flex items-center justify-center shadow-md"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>Cargar PDF(s)</button></div>
                 
                 <div id="shipment-list-container" class="space-y-6"></div>
 
@@ -426,17 +426,15 @@
                  }
             };
 
-            const showScanFeedback = (bgColor, shipment, typeText, scannedBarcode = '') => {
+            const showScanFeedback = (bgColor, shipment, typeText, boxId = '') => {
                 elements.scanFeedbackOverlay.style.backgroundColor = bgColor;
                 
                 if (shipment) {
                     elements.scanFeedbackOrder.textContent = shipment.orderDescription;
-                    // Mostrar los 4 últimos dígitos de orderDescription
                     elements.scanFeedbackDigits.textContent = shipment.orderDescription.slice(-4);
                 } else {
                     elements.scanFeedbackOrder.textContent = 'Error';
-                    // Si no se encuentra el envío, se muestra los 7 últimos del código escaneado (como estaba)
-                    elements.scanFeedbackDigits.textContent = scannedBarcode.slice(-7);
+                    elements.scanFeedbackDigits.textContent = boxId.slice(-7);
                 }
                 elements.scanFeedbackType.textContent = typeText;
 
@@ -670,6 +668,12 @@
                     const link = e.target.closest('.nav-link');
                     if(link){
                         e.preventDefault();
+                        
+                        // Si estamos en la vista del escáner, cambiamos a la de checklist primero.
+                        if (elements.scannerView.classList.contains('active')) {
+                            switchView('checklist');
+                        }
+
                         currentStatusFilter = link.dataset.filter;
                         elements.statusFilters.querySelectorAll('a').forEach(a => a.classList.remove('active'));
                         link.classList.add('active');
