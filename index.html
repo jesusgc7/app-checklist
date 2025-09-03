@@ -127,14 +127,17 @@
                 <div class="bg-white p-6 rounded-xl shadow-lg">
                     <h2 class="text-3xl font-bold text-gray-800 mb-4">Escáner de Cajas</h2>
                      <div class="mb-4">
-                        <label for="scanner-input" class="block text-sm font-medium text-gray-700 mb-1">Escanear con lector externo:</label>
-                        <input type="text" id="scanner-input" placeholder="Haz clic aquí y escanea un código..." class="w-full border-2 border-gray-300 p-3 rounded-lg focus:border-black focus:ring-0">
+                         <label for="scanner-input" class="block text-sm font-medium text-gray-700 mb-1">Escanear con lector externo:</label>
+                         <div class="flex gap-2">
+                            <input type="text" id="scanner-input" placeholder="Haz clic aquí y escanea un código..." class="w-full border-2 border-gray-300 p-3 rounded-lg focus:border-black focus:ring-0">
+                            <button id="scanner-search-btn" class="bg-gray-800 text-white font-bold py-3 px-4 rounded-lg hover:bg-black transition-all">Buscar</button>
+                         </div>
                     </div>
                     <div id="scanner-progress-container" class="mt-4 hidden">
-                        <p id="scanner-progress-label" class="text-center font-semibold mb-2"></p>
-                        <div class="w-full bg-gray-200 rounded-full h-4">
-                            <div id="scanner-progress-bar" class="bg-blue-500 h-4 rounded-full transition-all duration-500" style="width: 0%"></div>
-                        </div>
+                         <p id="scanner-progress-label" class="text-center font-semibold mb-2"></p>
+                         <div class="w-full bg-gray-200 rounded-full h-4">
+                             <div id="scanner-progress-bar" class="bg-blue-500 h-4 rounded-full transition-all duration-500" style="width: 0%"></div>
+                         </div>
                     </div>
                 </div>
             </div>
@@ -212,6 +215,7 @@
                 checklistView: document.getElementById('checklist-view'),
                 scannerView: document.getElementById('scanner-view'),
                 scannerInput: document.getElementById('scanner-input'),
+                scannerSearchBtn: document.getElementById('scanner-search-btn'),
                 scannerProgressContainer: document.getElementById('scanner-progress-container'),
                 scannerProgressBar: document.getElementById('scanner-progress-bar'),
                 scannerProgressLabel: document.getElementById('scanner-progress-label'),
@@ -252,7 +256,7 @@
             };
 
             const renderAllShipments = (shipments) => {
-                if(!elements.pendingCount) return; // Safeguard if elements are not ready
+                if(!elements.pendingCount) return;
                 
                 const pendingShipments = shipments.filter(s => initialClassifications.get(s.firestoreId) === 'pending');
                 const partialShipments = shipments.filter(s => initialClassifications.get(s.firestoreId) === 'partial');
@@ -385,40 +389,99 @@
             };
 
              const generateAndRenderNotifications = (shipments) => {
-                const notifications = [];
-                const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-                shipments.forEach(shipment => {
-                    if (shipment.createdAt && typeof shipment.createdAt.toDate === 'function' && shipment.createdAt.toDate().getTime() < sevenDaysAgo) {
-                        shipment.boxes.forEach(box => {
-                            if (!box.delivered) {
-                                notifications.push(`¡Atención! La caja ${box.id} lleva una semana sin actualizarse. Deberías comprobarlo.`);
-                            }
-                        });
-                    }
-                });
+                 const notifications = [];
+                 const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+                 shipments.forEach(shipment => {
+                     if (shipment.createdAt && typeof shipment.createdAt.toDate === 'function' && shipment.createdAt.toDate().getTime() < sevenDaysAgo) {
+                         shipment.boxes.forEach(box => {
+                             if (!box.delivered) {
+                                 notifications.push(`¡Atención! La caja ${box.id} lleva una semana sin actualizarse. Deberías comprobarlo.`);
+                             }
+                         });
+                     }
+                 });
 
-                if (notifications.length > 0) {
-                    elements.notificationBadge.textContent = notifications.length;
-                    elements.notificationBadge.style.display = 'flex';
-                } else {
-                    elements.notificationBadge.style.display = 'none';
-                }
+                 if (notifications.length > 0) {
+                     elements.notificationBadge.textContent = notifications.length;
+                     elements.notificationBadge.style.display = 'flex';
+                 } else {
+                     elements.notificationBadge.style.display = 'none';
+                 }
 
-                elements.notificationList.innerHTML = notifications.length > 0 
-                    ? notifications.map(n => `<div class="p-2 border-b border-gray-200 text-sm">${n}</div>`).join('')
-                    : '<p class="text-gray-500 text-center p-4">No hay notificaciones</p>';
-            };
+                 elements.notificationList.innerHTML = notifications.length > 0 
+                     ? notifications.map(n => `<div class="p-2 border-b border-gray-200 text-sm">${n}</div>`).join('')
+                     : '<p class="text-gray-500 text-center p-4">No hay notificaciones</p>';
+             };
 
             const handleCheckChange = async (event) => {
                  const target = event.target;
-                if (target.type === 'checkbox' && target.dataset.boxId && !isDeleteModeActive) {
-                    const { firestoreId, boxId } = target.dataset;
-                    const shipmentInCache = localShipmentsCache.find(s => s.firestoreId === firestoreId);
-                    if (shipmentInCache) {
-                         const updatedBoxes = shipmentInCache.boxes.map(b => b.id === boxId ? { ...b, delivered: target.checked } : b);
-                         const docRef = window.firebaseSDK.doc(db, shipmentsCollectionRef.path, firestoreId);
-                         await window.firebaseSDK.updateDoc(docRef, { boxes: updatedBoxes, lastUpdated: window.firebaseSDK.serverTimestamp() });
+                 if (target.type === 'checkbox' && target.dataset.boxId && !isDeleteModeActive) {
+                     const { firestoreId, boxId } = target.dataset;
+                     const shipmentInCache = localShipmentsCache.find(s => s.firestoreId === firestoreId);
+                     if (shipmentInCache) {
+                          const updatedBoxes = shipmentInCache.boxes.map(b => b.id === boxId ? { ...b, delivered: target.checked } : b);
+                          const docRef = window.firebaseSDK.doc(db, shipmentsCollectionRef.path, firestoreId);
+                          await window.firebaseSDK.updateDoc(docRef, { boxes: updatedBoxes, lastUpdated: window.firebaseSDK.serverTimestamp() });
+                     }
+                 }
+            };
+
+            const showScanFeedback = (bgColor, shipment, typeText, boxId = '') => {
+                elements.scanFeedbackOverlay.style.backgroundColor = bgColor;
+                
+                if (shipment) {
+                    elements.scanFeedbackOrder.textContent = shipment.orderDescription;
+                    elements.scanFeedbackDigits.textContent = shipment.id.slice(-4);
+                } else {
+                    elements.scanFeedbackOrder.textContent = 'Error';
+                    elements.scanFeedbackDigits.textContent = boxId.slice(-7);
+                }
+                elements.scanFeedbackType.textContent = typeText;
+
+                elements.scanFeedbackOverlay.classList.remove('opacity-0');
+                // Oculta el feedback después de 2 segundos y reenfoca el input
+                setTimeout(() => {
+                    elements.scanFeedbackOverlay.classList.add('opacity-0');
+                    elements.scannerInput.focus();
+                }, 2000);
+            };
+
+            const performScanSearch = async () => {
+                const barcode = elements.scannerInput.value.trim();
+                if (barcode.length < 7) return;
+
+                const searchDigits = barcode.slice(-7);
+                let foundBox = null;
+                let foundShipment = null;
+
+                for (const shipment of localShipmentsCache) {
+                    const box = shipment.boxes.find(b => b.id.slice(-7) === searchDigits);
+                    if (box) {
+                        foundBox = box;
+                        foundShipment = shipment;
+                        break;
                     }
+                }
+
+                elements.scannerInput.value = ''; // Limpia el input para el siguiente escaneo
+
+                if (foundShipment && foundBox) {
+                    if (foundBox.delivered) {
+                        showScanFeedback('#eab308', foundShipment, 'CAJA YA RECIBIDA', foundBox.id); // Amarillo
+                    } else {
+                        const docRef = window.firebaseSDK.doc(db, shipmentsCollectionRef.path, foundShipment.firestoreId);
+                        const updatedBoxes = foundShipment.boxes.map(b =>
+                            b.id === foundBox.id ? { ...b, delivered: true } : b
+                        );
+                        // Actualiza la base de datos
+                        await window.firebaseSDK.updateDoc(docRef, { boxes: updatedBoxes, lastUpdated: window.firebaseSDK.serverTimestamp() });
+                        
+                        const typeInfo = foundShipment.type === 'Pack' ? { color: '#3b82f6', label: 'PACK' } : { color: '#22c55e', label: 'B2B' };
+                        showScanFeedback(typeInfo.color, foundShipment, typeInfo.label, foundBox.id);
+                    }
+                } else {
+                    // Muestra error si no se encuentra la caja
+                    showScanFeedback('#ef4444', null, 'CAJA NO ENCONTRADA', barcode); // Rojo
                 }
             };
             
@@ -452,9 +515,9 @@
 
             const getVisibleShipmentIds = () => {
                  const searchTerm = elements.boxSearchInput.value.trim();
-                return localShipmentsCache
-                    .filter(s => searchTerm.length < 4 || s.boxes.some(b => b.id.endsWith(searchTerm)))
-                    .map(s => s.firestoreId);
+                 return localShipmentsCache
+                     .filter(s => searchTerm.length < 4 || s.boxes.some(b => b.id.endsWith(searchTerm)))
+                     .map(s => s.firestoreId);
             };
 
             const handleSelectAllToggle = () => {
@@ -629,7 +692,19 @@
                 elements.navChecklist.addEventListener('click', (e) => { e.preventDefault(); switchView('checklist'); toggleMenu(false); });
                 elements.navScanner.addEventListener('click', (e) => { e.preventDefault(); switchView('scanner'); toggleMenu(false); });
                 
-                 elements.notificationBell.addEventListener('click', () => elements.notificationPanel.classList.toggle('hidden'));
+                elements.scannerInput.addEventListener('input', () => {
+                    clearTimeout(scanTimeout);
+                    // Inicia un temporizador para buscar automáticamente tras 1.5s
+                    scanTimeout = setTimeout(performScanSearch, 1500);
+                });
+
+                elements.scannerSearchBtn.addEventListener('click', () => {
+                    // Permite la búsqueda manual con el botón
+                    clearTimeout(scanTimeout);
+                    performScanSearch();
+                });
+
+                elements.notificationBell.addEventListener('click', () => elements.notificationPanel.classList.toggle('hidden'));
                 elements.clearNotificationsBtn.addEventListener('click', () => {
                     elements.notificationList.innerHTML = '<p class="text-gray-500 text-center p-4">No hay notificaciones</p>';
                     elements.notificationBadge.style.display = 'none';
@@ -644,4 +719,3 @@
     </script>
 </body>
 </html>
-
