@@ -39,6 +39,7 @@
         .app-view { display: none; }
         .app-view.active { display: block; }
         .nav-link.active{background-color:#f3f4f6;font-weight:700}
+        /* NUEVO: Estilo para el vídeo de la cámara */
         #camera-feed { width: 100%; max-height: 70vh; border-radius: 0.5rem; }
     </style>
 </head>
@@ -185,7 +186,7 @@
 
     <script type="module">
         document.addEventListener('DOMContentLoaded', () => {
-            const APP_VERSION = "v6.2-camera-fix";
+            const APP_VERSION = "v6.1-camera"; // Versión actualizada
             let db; let shipmentsCollectionRef; let localShipmentsCache = [];
             let unsubscribeFromShipments; let currentCity = '';
             let isDeleteModeActive = false; let shipmentsToDelete = new Set(); 
@@ -193,10 +194,11 @@
             let currentStatusFilter = 'pending';
             let scanTimeout;
             const projectId = "extremadurasport-checklist"; 
-            let codeReader; 
-            let isCameraRunning = false;
+            let codeReader; // NUEVO: variable para el lector de cámara
+            let isCameraRunning = false; // NUEVO: estado de la cámara
 
             const elements = {
+                // ... (elementos existentes)
                 citySelectorView: document.getElementById('city-selector-view'),
                 appWrapper: document.getElementById('app-wrapper'), sideMenuContainer: document.getElementById('side-menu-container'),
                 menuOverlay: document.getElementById('menu-overlay'), sideMenu: document.getElementById('side-menu'),
@@ -234,93 +236,252 @@
                 scanFeedbackType: document.getElementById('scan-feedback-type'),
                 dateFilterInput: document.getElementById('date-filter-input'),
                 clearDateFilter: document.getElementById('clear-date-filter'),
+                // NUEVOS ELEMENTOS PARA LA CÁMARA
                 cameraScanBtn: document.getElementById('camera-scan-btn'),
                 cameraContainer: document.getElementById('camera-container'),
                 cameraFeed: document.getElementById('camera-feed'),
             };
 
-            const toggleLoader = (show, text = '') => { /* ... */ };
-            const applyAllFilters = () => { /* ... */ };
-            const updateAllViews = (shipments) => { /* ... */ };
-            const renderAllShipments = (shipments) => { /* ... */ };
-            const renderShipmentList = (shipmentList, container, emptyText) => { /* ... */ };
-            const extractDataFromPdf = async (file) => { /* ... */ };
-            const handleFileSelect = async (files) => { /* ... */ };
-            const generateAndRenderNotifications = (shipments) => { /* ... */ };
-            const handleCheckChange = async (event) => { /* ... */ };
-            const showScanFeedback = (bgColor, shipment, typeText, boxId = '') => { /* ... */ };
-            const performScanSearch = async () => { /* ... */ };
-            const toggleDeleteMode = (enable) => { /* ... */ };
-            const updateDeleteControls = () => { /* ... */ };
-            const handleShipmentSelect = (event) => { /* ... */ };
-            const getVisibleShipmentIds = () => { /* ... */ };
-            const handleSelectAllToggle = () => { /* ... */ };
-            const handleDeleteSelected = () => { /* ... */ };
-            const executeDelete = async () => { /* ... */ };
-            const connectToFirebase = async (city) => { /* ... */ };
-            const toggleMenu = (show) => { /* ... */ };
-            
-            // --- CÓDIGO PEGADO (PARA BREVEDAD, SOLO SE MUESTRAN LAS FUNCIONES NUEVAS/MODIFICADAS) ---
-            
-            Object.assign(window, { toggleLoader, applyAllFilters, updateAllViews, renderAllShipments, renderShipmentList, extractDataFromPdf, handleFileSelect, generateAndRenderNotifications, handleCheckChange, showScanFeedback, performScanSearch, toggleDeleteMode, updateDeleteControls, handleShipmentSelect, getVisibleShipmentIds, handleSelectAllToggle, handleDeleteSelected, executeDelete, connectToFirebase, toggleMenu });
-            
-            // Las funciones existentes se han omitido aquí para no repetir el bloque entero, pero están en tu código.
-            // A continuación están las nuevas funciones de la cámara y la `switchView` modificada.
-            
-            const stopCamera = () => {
-                if (codeReader) {
-                    codeReader.reset();
-                }
-                elements.cameraContainer.classList.add('hidden');
-                elements.cameraScanBtn.querySelector('span').textContent = 'Activar Cámara';
-                isCameraRunning = false;
+            const toggleLoader = (show, text = '') => {
+                elements.loaderText.textContent = text;
+                elements.loaderOverlay.style.display = show ? 'flex' : 'none';
             };
 
-            const startCamera = async () => {
+            // ... (resto de funciones existentes como applyAllFilters, updateAllViews, etc.)
+            const applyAllFilters = () => { updateAllViews(localShipmentsCache); }
+            const updateAllViews = (shipments) => {
+                const searchTerm = elements.boxSearchInput.value.trim();
+                const dateFilter = elements.dateFilterInput.value;
+                let filteredShipments = shipments;
+                if (searchTerm.length >= 4) { filteredShipments = filteredShipments.filter(s => s.boxes.some(b => b.id.endsWith(searchTerm))); }
+                if (dateFilter) { const filterDate = dateFilter.split('-').reverse().join('/'); filteredShipments = filteredShipments.filter(s => s.shippingDate === filterDate); }
+                renderAllShipments(filteredShipments);
+                generateAndRenderNotifications(shipments);
+            };
+            const renderAllShipments = (shipments) => {
+                if(!elements.pendingCount) return;
+                const pendingShipments = shipments.filter(s => initialClassifications.get(s.firestoreId) === 'pending');
+                const partialShipments = shipments.filter(s => initialClassifications.get(s.firestoreId) === 'partial');
+                const completedShipments = shipments.filter(s => initialClassifications.get(s.firestoreId) === 'completed');
+                elements.pendingCount.textContent = localShipmentsCache.filter(s => initialClassifications.get(s.firestoreId) === 'pending').length;
+                elements.partialCount.textContent = localShipmentsCache.filter(s => initialClassifications.get(s.firestoreId) === 'partial').length;
+                elements.completedCount.textContent = localShipmentsCache.filter(s => initialClassifications.get(s.firestoreId) === 'completed').length;
+                let listToRender; let emptyText = '';
+                switch(currentStatusFilter) {
+                    case 'pending': listToRender = pendingShipments; emptyText = 'No hay envíos pendientes.'; break;
+                    case 'partial': listToRender = partialShipments; emptyText = 'No hay envíos parcialmente recibidos.'; break;
+                    case 'completed': listToRender = completedShipments; emptyText = 'No hay envíos completados.'; break;
+                }
+                renderShipmentList(listToRender, elements.shipmentListContainer, emptyText);
+                elements.managementSection.style.display = localShipmentsCache.length > 0 ? 'block' : 'none';
+            };
+            const renderShipmentList = (shipmentList, container, emptyText) => {
+                if(!container) return; container.innerHTML = '';
+                if (shipmentList.length === 0) { container.innerHTML = `<p class="text-center text-gray-500 py-8 text-xl">${emptyText}</p>`; return; }
+                const groupedByDate = shipmentList.reduce((acc, shipment) => { const date = shipment.shippingDate || 'Sin Fecha'; if (!acc[date]) { acc[date] = []; } acc[date].push(shipment); return acc; }, {});
+                const sortedDates = Object.keys(groupedByDate).sort((a, b) => { const dateA = a.split('/').reverse().join('-'); const dateB = b.split('/').reverse().join('-'); return new Date(dateB) - new Date(dateA); });
+                sortedDates.forEach(date => {
+                    const dateHeader = document.createElement('h2'); dateHeader.className = "text-xl font-bold text-gray-700 pb-2 mb-4 border-b-2 border-gray-300"; dateHeader.textContent = date; container.appendChild(dateHeader);
+                    const shipmentsForDate = groupedByDate[date];
+                    shipmentsForDate.sort((a, b) => (b.createdAt?.toDate?.() || 0) - (a.createdAt?.toDate?.() || 0));
+                    shipmentsForDate.forEach(shipment => {
+                        const hasValidTimestamp = shipment.lastUpdated && typeof shipment.lastUpdated.toDate === 'function'; const isOverdue = hasValidTimestamp && (Date.now() - shipment.lastUpdated.toDate().getTime()) > (7 * 24 * 60 * 60 * 1000); const isCompleted = shipment.boxes.every(b => b.delivered); const isSelected = shipmentsToDelete.has(shipment.firestoreId);
+                        let cardClasses = 'border-gray-200'; if (isOverdue && !isCompleted && initialClassifications.get(shipment.firestoreId) === 'partial') cardClasses = 'border-red-500 bg-red-50'; if (isSelected) cardClasses = 'border-blue-500 bg-blue-50';
+                        const progressText = `${shipment.boxes.filter(b => b.delivered).length} / ${shipment.boxes.length}`; const shipmentCard = document.createElement('div'); shipmentCard.className = `p-4 sm:p-6 rounded-xl shadow-lg border-l-4 transition-all ${cardClasses} flex items-start space-x-4`;
+                        const type = shipment.type || 'B2B'; const typeLabel = type === 'Pack' ? `<span class="text-xs font-bold px-2 py-1 rounded-full bg-blue-200 text-blue-800">Pack</span>` : `<span class="text-xs font-bold px-2 py-1 rounded-full bg-green-200 text-green-800">B2B</span>`;
+                        shipmentCard.innerHTML = `${isDeleteModeActive ? `<input type="checkbox" class="shipment-select-checkbox h-6 w-6 rounded border-gray-400 text-gray-800 focus:ring-gray-500 cursor-pointer mt-1" data-firestore-id="${shipment.firestoreId}" ${isSelected ? 'checked' : ''}>` : ''}<div class="flex-grow"><div class="border-b border-gray-200 pb-3 mb-3"><div class="flex justify-between items-start"><div><h3 class="text-xl font-bold text-gray-900">${shipment.orderDescription || 'Sin Descripción'}</h3><p class="text-sm text-gray-500">Shipping Order: ${shipment.id} | Fecha: ${shipment.shippingDate}</p><p class="text-sm text-gray-400 italic">${shipment.fileName}</p></div><div class="text-right space-y-2"><div class="font-bold text-sm px-3 py-1 rounded-full ${isCompleted ? 'bg-green-200 text-green-800' : `bg-yellow-200 text-yellow-800`}">${isCompleted ? 'Completado' : `Progreso: ${progressText}`}</div><div>${typeLabel}</div></div></div>${isOverdue && !isCompleted && initialClassifications.get(shipment.firestoreId) === 'partial' ? '<p class="text-sm font-bold text-red-600 mt-2">Este pedido lleva más de 7 días sin actualizarse.</p>' : ''}</div><div class="space-y-2 box-list"></div></div>`;
+                        const boxListContainer = shipmentCard.querySelector('.box-list');
+                        shipment.boxes.forEach(box => {
+                            const label = document.createElement('label'); label.className = `flex items-center p-3 rounded-lg transition-all duration-300 ${isDeleteModeActive ? 'cursor-default' : 'cursor-pointer hover:bg-gray-50'} ${box.delivered ? 'bg-gray-100 text-gray-500' : 'bg-white'}`;
+                            label.innerHTML = `<input type="checkbox" ${box.delivered ? 'checked' : ''} class="h-6 w-6 rounded border-gray-400 text-gray-800 focus:ring-gray-500 ${isDeleteModeActive ? 'cursor-not-allowed' : 'cursor-pointer'}" data-firestore-id="${shipment.firestoreId}" data-box-id="${box.id}" ${isDeleteModeActive ? 'disabled' : ''}><div class="ml-4 flex-grow ${box.delivered ? 'line-through' : ''}"><p class="font-bold text-lg font-mono">${box.id}</p></div>`;
+                            boxListContainer.appendChild(label);
+                        }); container.appendChild(shipmentCard);
+                    });
+                });
+            };
+            const extractDataFromPdf = async (file) => {
+                pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`; const fileBuffer = await file.arrayBuffer(); const pdfDoc = await pdfjsLib.getDocument({ data: fileBuffer }).promise; let rawTextItems = [];
+                for (let i = 1; i <= pdfDoc.numPages; i++) { const page = await pdfDoc.getPage(i); const textContent = await page.getTextContent(); rawTextItems.push(...textContent.items.map(item => item.str.trim())); }
+                const fullText = rawTextItems.join(' '); const orderIdRegex = /Shipping Order\s*([A-Z0-9]+)/i; const dateRegex = /(\d{1,2}\/\d{1,2}\/\d{4})/; const boxIdRegex = /ND\d{10}/g; const descRegex = /Order Description\s*([A-Z0-9-]+)/i;
+                const orderIdMatch = fullText.match(orderIdRegex); const shippingOrderId = orderIdMatch ? orderIdMatch[1] : `Desconocido-${Date.now()}`; const dateMatch = fullText.match(dateRegex); const shippingDate = dateMatch ? dateMatch[0] : "N/A";
+                const descMatch = fullText.match(descRegex); const orderDescription = descMatch ? descMatch[1] : "Sin Descripción"; const boxIdMatches = fullText.match(boxIdRegex); const uniqueBoxIds = boxIdMatches ? [...new Set(boxIdMatches)] : [];
+                const type = orderDescription.startsWith('CS-') ? 'Pack' : 'B2B'; return { shippingOrderId, shippingDate, boxIds: uniqueBoxIds, orderDescription, fileName: file.name, type };
+            };
+            const handleFileSelect = async (files) => {
+                if (!files || files.length === 0 || !shipmentsCollectionRef) return; toggleLoader(true, `Procesando ${files.length} archivo(s)...`);
+                const fileProcessingPromises = Array.from(files).map(file => extractDataFromPdf(file).catch(error => { console.error(`Error procesando ${file.name}:`, error); return null; })); const results = await Promise.all(fileProcessingPromises);
+                const validNewShipmentsData = results.filter(data => data && !localShipmentsCache.some(s => s.id === data.shippingOrderId));
+                if (validNewShipmentsData.length > 0) {
+                    const batch = window.firebaseSDK.writeBatch(db); validNewShipmentsData.forEach(data => {
+                        const newDocRef = window.firebaseSDK.doc(shipmentsCollectionRef); const newShipment = { id: data.shippingOrderId, orderDescription: data.orderDescription, type: data.type, fileName: data.fileName, shippingDate: data.shippingDate, sortableDate: data.shippingDate.split('/').reverse().join('-'), boxes: data.boxIds.map(id => ({ id, delivered: false })), lastUpdated: window.firebaseSDK.serverTimestamp(), createdAt: window.firebaseSDK.serverTimestamp() }; batch.set(newDocRef, newShipment);
+                    }); await batch.commit();
+                } toggleLoader(false); elements.fileInput.value = null;
+            };
+            const generateAndRenderNotifications = (shipments) => {
+                const notifications = []; const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+                shipments.forEach(shipment => { if (shipment.createdAt && typeof shipment.createdAt.toDate === 'function' && shipment.createdAt.toDate().getTime() < sevenDaysAgo) { shipment.boxes.forEach(box => { if (!box.delivered) { notifications.push(`¡Atención! La caja ${box.id} lleva una semana sin actualizarse. Deberías comprobarlo.`); } }); } });
+                if (notifications.length > 0) { elements.notificationBadge.textContent = notifications.length; elements.notificationBadge.style.display = 'flex'; } else { elements.notificationBadge.style.display = 'none'; }
+                elements.notificationList.innerHTML = notifications.length > 0 ? notifications.map(n => `<div class="p-2 border-b border-gray-200 text-sm">${n}</div>`).join('') : '<p class="text-gray-500 text-center p-4">No hay notificaciones</p>';
+            };
+            const handleCheckChange = async (event) => {
+                const target = event.target; if (target.type === 'checkbox' && target.dataset.boxId && !isDeleteModeActive) {
+                    const { firestoreId, boxId } = target.dataset; const shipmentInCache = localShipmentsCache.find(s => s.firestoreId === firestoreId);
+                    if (shipmentInCache) { const updatedBoxes = shipmentInCache.boxes.map(b => b.id === boxId ? { ...b, delivered: target.checked } : b); const docRef = window.firebaseSDK.doc(db, shipmentsCollectionRef.path, firestoreId); await window.firebaseSDK.updateDoc(docRef, { boxes: updatedBoxes, lastUpdated: window.firebaseSDK.serverTimestamp() }); }
+                }
+            };
+            const showScanFeedback = (bgColor, shipment, typeText, boxId = '') => {
+                elements.scanFeedbackOverlay.style.backgroundColor = bgColor;
+                if (shipment) { elements.scanFeedbackOrder.textContent = shipment.orderDescription; elements.scanFeedbackDigits.textContent = shipment.orderDescription.slice(-4); } else { elements.scanFeedbackOrder.textContent = 'Error'; elements.scanFeedbackDigits.textContent = boxId.slice(-7); }
+                elements.scanFeedbackType.textContent = typeText;
+                elements.scanFeedbackOverlay.classList.remove('opacity-0');
+                setTimeout(() => { elements.scanFeedbackOverlay.classList.add('opacity-0'); elements.scannerInput.focus(); }, 2000);
+            };
+            const performScanSearch = async () => {
+                const barcode = elements.scannerInput.value.trim(); if (barcode.length < 7) return;
+                const searchDigits = barcode.slice(-7); let foundBox = null; let foundShipment = null;
+                for (const shipment of localShipmentsCache) { const box = shipment.boxes.find(b => b.id.slice(-7) === searchDigits); if (box) { foundBox = box; foundShipment = shipment; break; } }
+                elements.scannerInput.value = '';
+                if (foundShipment && foundBox) {
+                    if (foundBox.delivered) { showScanFeedback('#eab308', foundShipment, 'CAJA YA RECIBIDA', foundBox.id); } else {
+                        const docRef = window.firebaseSDK.doc(db, shipmentsCollectionRef.path, foundShipment.firestoreId); const updatedBoxes = foundShipment.boxes.map(b => b.id === foundBox.id ? { ...b, delivered: true } : b);
+                        await window.firebaseSDK.updateDoc(docRef, { boxes: updatedBoxes, lastUpdated: window.firebaseSDK.serverTimestamp() });
+                        const typeInfo = foundShipment.type === 'Pack' ? { color: '#3b82f6', label: 'PACK' } : { color: '#22c55e', label: 'B2B' };
+                        showScanFeedback(typeInfo.color, foundShipment, typeInfo.label, foundBox.id);
+                    }
+                } else { showScanFeedback('#ef4444', null, 'CAJA NO ENCONTRADA', barcode); }
+            };
+
+            // --- NUEVAS FUNCIONES PARA LA CÁMARA ---
+            const stopCamera = () => {
+                if (codeReader) {
+                    codeReader.reset(); // Detiene la cámara y libera recursos
+                    elements.cameraContainer.classList.add('hidden');
+                    elements.cameraScanBtn.querySelector('span').textContent = 'Activar Cámara';
+                    isCameraRunning = false;
+                }
+            };
+
+            const startCamera = () => {
                 if (!codeReader) {
                     codeReader = new ZXing.BrowserMultiFormatReader();
                 }
+                isCameraRunning = true;
+                elements.cameraContainer.classList.remove('hidden');
+                elements.cameraScanBtn.querySelector('span').textContent = 'Detener Cámara';
 
-                try {
-                    isCameraRunning = true;
-                    elements.cameraContainer.classList.remove('hidden');
-                    elements.cameraScanBtn.querySelector('span').textContent = 'Escaneando... (Cancelar)';
-                    
-                    const result = await codeReader.decodeOnceFromVideoDevice(undefined, 'camera-feed');
-                    
-                    new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU'+Array(1e3).join('12112')).play();
-                    elements.scannerInput.value = result.getText();
-                    await performScanSearch();
-
-                } catch (err) {
-                    // Ignora los errores comunes que ocurren cuando no se encuentra un código
-                    if (!(err instanceof ZXing.NotFoundException)) {
-                         console.error("Error de escaneo:", err);
-                         alert("Ha ocurrido un error con la cámara. Revisa la consola y los permisos del navegador.");
+                codeReader.decodeFromVideoDevice(undefined, 'camera-feed', (result, err) => {
+                    if (result) {
+                        // Sonido de "bip" para feedback auditivo
+                        new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU'+Array(1e3).join('12112')).play();
+                        
+                        // Enviar el resultado a la lógica de búsqueda existente
+                        elements.scannerInput.value = result.getText();
+                        performScanSearch();
+                        
+                        // Detener la cámara tras un escaneo exitoso
+                        stopCamera();
                     }
-                } finally {
-                    // Se asegura de que la cámara siempre se detenga
+                    if (err && !(err instanceof ZXing.NotFoundException)) {
+                        console.error(err);
+                        stopCamera();
+                    }
+                }).catch(err => {
+                    console.error("Error al iniciar la cámara:", err);
+                    alert("No se pudo acceder a la cámara. Asegúrate de dar los permisos necesarios.");
                     stopCamera();
-                }
+                });
+            };
+
+            // ... (resto de funciones existentes como toggleDeleteMode, etc.)
+            const toggleDeleteMode = (enable) => {
+                isDeleteModeActive = enable; shipmentsToDelete.clear(); if (enable) { elements.deleteControls.style.display = 'block'; setTimeout(() => { elements.deleteControls.classList.remove('translate-y-full'); }, 10); } else { elements.deleteControls.classList.add('translate-y-full'); setTimeout(() => { elements.deleteControls.style.display = 'none'; }, 300); }
+                updateDeleteControls(); updateAllViews(localShipmentsCache);
+            };
+            const updateDeleteControls = () => {
+                const count = shipmentsToDelete.size; elements.selectionCounter.textContent = `${count} envío(s) seleccionado(s)`; elements.deleteSelectedButton.disabled = count === 0;
+                const allVisibleShipments = getVisibleShipmentIds(); const allSelected = allVisibleShipments.length > 0 && allVisibleShipments.every(id => shipmentsToDelete.has(id));
+                elements.selectAllButton.textContent = allSelected ? 'Deseleccionar Todo' : 'Seleccionar Todo';
+            };
+            const handleShipmentSelect = (event) => {
+                const target = event.target; if (isDeleteModeActive && target.classList.contains('shipment-select-checkbox')) { const { firestoreId } = target.dataset; if (target.checked) shipmentsToDelete.add(firestoreId); else shipmentsToDelete.delete(firestoreId); updateDeleteControls(); updateAllViews(localShipmentsCache); }
+            };
+            const getVisibleShipmentIds = () => { const searchTerm = elements.boxSearchInput.value.trim(); return localShipmentsCache.filter(s => searchTerm.length < 4 || s.boxes.some(b => b.id.endsWith(searchTerm))).map(s => s.firestoreId); };
+            const handleSelectAllToggle = () => {
+                const visibleShipmentIds = getVisibleShipmentIds(); const allSelected = visibleShipmentIds.length > 0 && visibleShipmentIds.every(id => shipmentsToDelete.has(id));
+                if (allSelected) { visibleShipmentIds.forEach(id => shipmentsToDelete.delete(id)); } else { visibleShipmentIds.forEach(id => shipmentsToDelete.add(id)); }
+                updateDeleteControls(); updateAllViews(localShipmentsCache);
+            };
+            const handleDeleteSelected = () => { const count = shipmentsToDelete.size; if (count === 0) return; elements.confirmDeleteText.textContent = `¿Estás seguro de que quieres eliminar los ${count} envíos seleccionados? Esta acción no se puede deshacer.`; elements.confirmDeleteModal.style.display = 'flex'; };
+            const executeDelete = async () => {
+                toggleLoader(true, `Eliminando ${shipmentsToDelete.size} envío(s)...`); const batch = window.firebaseSDK.writeBatch(db); shipmentsToDelete.forEach(id => { const docRef = window.firebaseSDK.doc(db, shipmentsCollectionRef.path, id); batch.delete(docRef); });
+                await batch.commit(); toggleLoader(false); toggleDeleteMode(false); elements.confirmDeleteModal.style.display = 'none';
+            };
+            const connectToFirebase = async (city) => {
+                const { initializeApp, getFirestore, collection, onSnapshot, getAuth, signInAnonymously, setLogLevel, getApps, getApp } = window.firebaseSDK;
+                if (!window.firebaseConfig || !window.firebaseConfig.projectId) { alert("La configuración de Firebase no está disponible."); return; }
+                toggleLoader(true, `Conectando a ${city}...`); currentCity = city; localStorage.setItem('extremaduraSportSelectedCity', city); elements.cityDisplay.textContent = city; elements.citySelectorView.style.display = 'none'; elements.appWrapper.style.display = 'block'; elements.sideMenuContainer.style.display = 'block';
+                try {
+                    let app; if (getApps().length === 0) { app = initializeApp(window.firebaseConfig); } else { app = getApp(); }
+                    db = getFirestore(app); const auth = getAuth(app); setLogLevel('error');
+                    if (!auth.currentUser) { await signInAnonymously(auth); }
+                    if (unsubscribeFromShipments) { unsubscribeFromShipments(); unsubscribeFromShipments = null; }
+                    const collectionPath = `projects/${projectId}/data/${city.toLowerCase()}/shipments`; shipmentsCollectionRef = collection(db, collectionPath);
+                    unsubscribeFromShipments = onSnapshot(shipmentsCollectionRef, (snapshot) => {
+                        localShipmentsCache = snapshot.docs.map(doc => ({ firestoreId: doc.id, ...doc.data() }));
+                        initialClassifications.clear(); localShipmentsCache.forEach(s => {
+                            const totalBoxes = s.boxes.length; const deliveredBoxes = s.boxes.filter(b => b.delivered).length; let status = 'pending';
+                            if (deliveredBoxes === totalBoxes && totalBoxes > 0) { status = 'completed'; } else if (deliveredBoxes > 0) { status = 'partial'; }
+                            initialClassifications.set(s.firestoreId, status);
+                        });
+                        updateAllViews(localShipmentsCache); toggleLoader(false);
+                    }, error => { console.error("Error de Firestore:", error); alert("No se pudo conectar a la base de datos."); toggleLoader(false); });
+                } catch (error) { console.error("Firebase init failed:", error); alert("Error fatal. Refresca la página."); toggleLoader(false); }
+            };
+            const toggleMenu = (show) => { if (show) { elements.menuOverlay.classList.remove('hidden'); elements.sideMenu.classList.remove('-translate-x-full'); } else { elements.menuOverlay.classList.add('hidden'); elements.sideMenu.classList.add('-translate-x-full'); } };
+            const switchView = (view) => {
+                // NUEVO: Asegurarse de detener la cámara si cambiamos de vista
+                if (isCameraRunning) { stopCamera(); }
+                document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active')); document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                document.getElementById(`${view}-view`).classList.add('active'); document.getElementById(`nav-${view}`).classList.add('active');
             };
             
-            const switchView = (view) => {
-                if (isCameraRunning) {
-                    stopCamera();
-                }
-                document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active'));
-                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-                document.getElementById(`${view}-view`).classList.add('active');
-                document.getElementById(`nav-${view}`).classList.add('active');
-            };
-
             const main = () => {
                 elements.appVersion.textContent = APP_VERSION;
                 const savedCity = localStorage.getItem('extremaduraSportSelectedCity');
                 if (savedCity) { connectToFirebase(savedCity); } else { elements.citySelectorView.style.display = 'flex'; elements.appWrapper.style.display = 'none'; elements.sideMenuContainer.style.display = 'none'; }
                 
-                // ... (todos los event listeners existentes)
+                elements.openMenuButton.addEventListener('click', () => toggleMenu(true));
+                elements.closeMenuButton.addEventListener('click', () => toggleMenu(false));
+                elements.menuOverlay.addEventListener('click', () => toggleMenu(false));
+                document.querySelectorAll('.city-btn').forEach(btn => { btn.addEventListener('click', () => { connectToFirebase(btn.dataset.city); }); });
+                elements.changeCityButton.addEventListener('click', () => { localStorage.removeItem('extremaduraSportSelectedCity'); location.reload(); });
+                elements.uploadButton.addEventListener('click', () => elements.fileInput.click());
+                elements.fileInput.addEventListener('change', (event) => handleFileSelect(event.target.files));
                 
+                elements.statusFilters.addEventListener('click', (e) => {
+                    const link = e.target.closest('.nav-link'); if(link){ e.preventDefault();
+                        if (elements.scannerView.classList.contains('active')) { switchView('checklist'); }
+                        currentStatusFilter = link.dataset.filter; elements.statusFilters.querySelectorAll('a').forEach(a => a.classList.remove('active')); link.classList.add('active');
+                        updateAllViews(localShipmentsCache); toggleMenu(false);
+                    }
+                });
+
+                elements.manageShipmentsButton.addEventListener('click', () => toggleDeleteMode(true));
+                elements.cancelDeleteButton.addEventListener('click', () => toggleDeleteMode(false));
+                elements.deleteSelectedButton.addEventListener('click', handleDeleteSelected);
+                elements.selectAllButton.addEventListener('click', handleSelectAllToggle);
+                elements.confirmDeleteBtn.addEventListener('click', executeDelete);
+                elements.cancelConfirmDeleteBtn.addEventListener('click', () => { elements.confirmDeleteModal.style.display = 'none'; });
+                elements.boxSearchInput.addEventListener('input', applyAllFilters);
+                elements.dateFilterInput.addEventListener('change', applyAllFilters);
+                elements.clearDateFilter.addEventListener('click', () => { elements.dateFilterInput.value = ''; applyAllFilters(); });
+                elements.navChecklist.addEventListener('click', (e) => { e.preventDefault(); switchView('checklist'); toggleMenu(false); });
+                elements.navScanner.addEventListener('click', (e) => { e.preventDefault(); switchView('scanner'); toggleMenu(false); });
+                
+                elements.scannerInput.addEventListener('input', () => { clearTimeout(scanTimeout); scanTimeout = setTimeout(performScanSearch, 1500); });
+                elements.scannerSearchBtn.addEventListener('click', () => { clearTimeout(scanTimeout); performScanSearch(); });
+
+                // NUEVO: Event listener para el botón de la cámara
                 elements.cameraScanBtn.addEventListener('click', () => {
                     if (isCameraRunning) {
                         stopCamera();
@@ -329,7 +490,9 @@
                     }
                 });
 
-                // ... (el resto de los event listeners)
+                elements.notificationBell.addEventListener('click', () => elements.notificationPanel.classList.toggle('hidden'));
+                elements.clearNotificationsBtn.addEventListener('click', () => { elements.notificationList.innerHTML = '<p class="text-gray-500 text-center p-4">No hay notificaciones</p>'; elements.notificationBadge.style.display = 'none'; elements.notificationPanel.classList.add('hidden'); });
+                document.body.addEventListener('change', (e) => { handleCheckChange(e); handleShipmentSelect(e); });
             };
 
             main();
