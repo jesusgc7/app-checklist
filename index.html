@@ -737,6 +737,12 @@
             // Esta función ahora es segura porque 'elements' solo se rellena
             // después de que MWC haya cargado, por lo que '.value' siempre existirá.
             const updateAllViews = (shipments) => {
+                // Comprobación de seguridad por si acaso
+                if (!elements.boxSearchInput) {
+                    console.warn("updateAllViews() llamada antes de que 'elements' esté listo.");
+                    return; 
+                }
+                
                 const boxSearchTerm = elements.boxSearchInput.value.trim();
                 const itemSearchTerm = elements.itemSearchInput.value.trim().toLowerCase();
                 const dateFilter = elements.dateFilterInput.value;
@@ -1337,8 +1343,36 @@
                 elements.confirmDeleteModal.open = false;
             };
 
-            const connectToFirebase = async (city) => {
+            // ==================================================
+            // SECCIÓN 2 DE CÓDIGO MODIFICADA (connectToFirebase)
+            // ==================================================
+            
+            // Esta es la función clave de espera.
+            const awaitMaterialElementsReady = () => {
+                return new Promise((resolve) => {
+                    const checkElements = () => {
+                        // Comprobamos la propiedad .value del elemento que falla.
+                        // Si es 'undefined', MWC aún no ha "mejorado" el componente.
+                        if (elements.boxSearchInput && elements.boxSearchInput.value !== undefined) {
+                            console.log("¡Elementos MWC listos y con propiedades!");
+                            resolve();
+                        } else {
+                            // Todavía no están listos, volver a comprobar en 50ms
+                            console.log("Esperando a MWC...");
+                            setTimeout(checkElements, 50);
+                        }
+                    };
+                    checkElements();
+                });
+            };
+
+            const connectToFirebase = async (city) => { // <--- Convertida en 'async'
                 toggleLoader(true, `Conectando a ${city}...`);
+                
+                // *** NUEVA LÍNEA ***
+                // Esperar a que los elementos estén 100% listos ANTES de conectar a Firebase
+                await awaitMaterialElementsReady();
+                
                 currentCity = city;
                 localStorage.setItem('extremaduraSportSelectedCity', city);
                 elements.cityDisplay.textContent = city;
@@ -1361,6 +1395,9 @@
                     
                     const collectionPath = `projects/${projectId}/data/${city.toLowerCase()}/shipments`;
                     shipmentsCollectionRef = collection(db, collectionPath);
+                    
+                    // AHORA es seguro adjuntar el listener, porque 'awaitMaterialElementsReady'
+                    // ha garantizado que 'updateAllViews' no fallará.
                     unsubscribeFromShipments = onSnapshot(shipmentsCollectionRef, (snapshot) => {
                         localShipmentsCache = snapshot.docs.map(doc => ({ firestoreId: doc.id, ...doc.data() }));
                         
@@ -1387,12 +1424,12 @@
                     toggleLoader(false);
                 }
             };
-
+            
             // ==================================================
-            // SECCIÓN 2 DE CÓDIGO MODIFICADA (main)
+            // SECCIÓN 3 DE CÓDIGO MODIFICADA (main)
             // ==================================================
-
-            // 1. Rellenar el objeto 'elements' DESPUÉS de que MWC cargue
+            
+            // Rellena el objeto 'elements' (se llama después de 'whenDefined')
             function initializeElements() {
                 elements = {
                     citySelectorDialog: document.getElementById('city-selector-dialog'),
@@ -1448,7 +1485,7 @@
                 };
             }
 
-            // 2. Función 'main' asíncrona que espera a MWC
+            // Función 'main' asíncrona que espera a MWC
             const main = async () => { 
                 
                 try {
@@ -1460,38 +1497,37 @@
                         customElements.whenDefined('md-tabs'),
                         customElements.whenDefined('md-navigation-drawer')
                     ]);
-                    console.log("Material Web Components cargados y listos.");
+                    console.log("Definiciones MWC cargadas.");
                 } catch (e) {
                     console.error("No se pudieron cargar los Componentes Material:", e);
                     alert("Error fatal: No se pudo cargar la interfaz de Material Design. Revisa la consola.");
                     return; // No continuar si la UI falla
                 }
 
-                // 3. AHORA que MWC está listo, rellenamos el objeto 'elements'
+                // AHORA que MWC está listo, rellenamos el objeto 'elements'
                 initializeElements();
                 console.log("Elementos de la UI inicializados.");
 
-                // 4. AHORA el resto del código se ejecuta de forma segura
+                // AHORA el resto del código se ejecuta de forma segura
                 const savedCity = localStorage.getItem('extremaduraSportSelectedCity');
                 if (savedCity) {
+                    // La función connectToFirebase AHORA tiene su propia espera interna
                     connectToFirebase(savedCity);
                 } else {
                     elements.citySelectorDialog.open = true;
                     elements.appWrapper.style.display = 'none';
                 }
                 
-                // Listeners de Selección de Ciudad
+                // Adjuntar todos los listeners (esto es seguro)
                 document.getElementById('caceres-btn').addEventListener('click', () => connectToFirebase('Cáceres'));
                 document.getElementById('badajoz-btn').addEventListener('click', () => connectToFirebase('Badajoz'));
 
-                // Listeners del Menú
                 elements.openMenuButton.addEventListener('click', () => toggleMenu(true));
                 elements.changeCityButton.addEventListener('click', () => {
                     localStorage.removeItem('extremaduraSportSelectedCity');
                     location.reload();
                 });
 
-                // Listeners de Vistas y Filtros
                 elements.navChecklist.addEventListener('click', (e) => { switchView('checklist'); toggleMenu(false); });
                 elements.navScanner.addEventListener('click', (e) => { switchView('scanner'); toggleMenu(false); });
                 
@@ -1515,11 +1551,9 @@
                     updateAllViews(localShipmentsCache);
                 });
 
-                // Listeners de Carga de Archivos
                 elements.uploadButton.addEventListener('click', () => elements.fileInput.click());
                 elements.fileInput.addEventListener('change', (event) => handleFileSelect(event.target.files));
                 
-                // Listeners de Gestión (Borrado)
                 elements.manageShipmentsButton.addEventListener('click', () => toggleDeleteMode(true));
                 elements.cancelDeleteButton.addEventListener('click', () => toggleDeleteMode(false));
                 elements.deleteSelectedButton.addEventListener('click', handleDeleteSelected);
@@ -1528,7 +1562,6 @@
                     if (e.target.returnValue === 'delete') executeDelete();
                 });
                 
-                // Listeners de Filtros de Búsqueda
                 elements.itemSearchInput.addEventListener('input', applyAllFilters);
                 elements.boxSearchInput.addEventListener('input', applyAllFilters);
                 elements.dateFilterInput.addEventListener('change', applyAllFilters);
@@ -1539,7 +1572,6 @@
                     applyAllFilters();
                 });
                 
-                // Listeners de Escáner
                 elements.scannerInput.addEventListener('input', () => {
                     clearTimeout(scanTimeout);
                     scanTimeout = setTimeout(performScanSearch, 1500);
@@ -1552,7 +1584,6 @@
                     if (isCameraRunning) stopCamera(); else startCamera();
                 });
 
-                // Listeners de Notificaciones
                 elements.notificationBell.addEventListener('click', () => elements.notificationPanel.open = !elements.notificationPanel.open);
                 elements.clearNotificationsBtn.addEventListener('click', () => {
                     elements.notificationList.innerHTML = '<md-list-item headline="No hay notificaciones"></md-list-item>';
@@ -1560,13 +1591,12 @@
                     elements.notificationPanel.open = false;
                 });
 
-                // Listeners Globales
                 document.body.addEventListener('change', (e) => { handleCheckChange(e); handleShipmentSelect(e); });
             };
 
             main(); // Llamar a la función principal
             // ==================================================
-            // FIN DE LA SECCIÓN 2
+            // FIN DE LA SECCIÓN 3
             // ==================================================
         });
     </script>
