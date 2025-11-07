@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Recepción - ExtremaduraSport</title>
+    <title>Checklist de Recepción - ExtremaduraSport</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
@@ -164,7 +164,6 @@
         <p id="scan-feedback-order" class="text-3xl font-bold mb-2"></p>
         <p id="scan-feedback-digits" class="text-9xl font-black"></p>
         <p id="scan-feedback-type" class="text-2xl font-semibold mt-2"></p>
-        
         <div id="scan-feedback-items" class="mt-4 text-lg bg-black bg-opacity-20 p-4 rounded-lg max-w-md w-full">
             </div>
     </div>
@@ -186,7 +185,7 @@
         import { getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, getDocs, serverTimestamp, setLogLevel, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         
-        // Import de la librería ZXing
+        // Import de la librería ZXing con la URL CORRECTA
         import { BrowserMultiFormatReader, NotFoundException } from "https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.4/esm/index.js";
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -253,8 +252,6 @@
                 cameraScanBtn: document.getElementById('camera-scan-btn'),
                 cameraContainer: document.getElementById('camera-container'),
                 cameraFeed: document.getElementById('camera-feed'),
-
-                // **** 3. NUEVOS ELEMENTOS AÑADIDOS ****
                 itemSearchInput: document.getElementById('item-search-input'),
                 scanFeedbackItems: document.getElementById('scan-feedback-items')
             };
@@ -268,7 +265,6 @@
                 updateAllViews(localShipmentsCache);
             }
 
-            // **** 4. `updateAllViews` ACTUALIZADA PARA INCLUIR EL NUEVO BUSCADOR DE ARTÍCULOS ****
             const updateAllViews = (shipments) => {
                 const boxSearchTerm = elements.boxSearchInput.value.trim();
                 const itemSearchTerm = elements.itemSearchInput.value.trim().toLowerCase();
@@ -276,22 +272,18 @@
                 
                 let filteredShipments = shipments;
 
-                // Filtro por 4 dígitos de caja
                 if (boxSearchTerm.length >= 4) {
                     filteredShipments = filteredShipments.filter(s => 
                         s.boxes.some(b => b.id.endsWith(boxSearchTerm))
                     );
                 }
 
-                // Filtro por fecha
                 if (dateFilter) {
                     const filterDate = dateFilter.split('-').reverse().join('/');
                     filteredShipments = filteredShipments.filter(s => s.shippingDate === filterDate);
                 }
 
-                // NUEVO: Filtro por artículo (código o descripción)
                 if (itemSearchTerm.length >= 3) {
-                    // Primero, filtramos las cajas que coinciden
                     const matchingShipments = filteredShipments.map(shipment => {
                         const matchingBoxes = shipment.boxes.filter(box => 
                             box.items.some(item => 
@@ -299,31 +291,35 @@
                                 item.desc.toLowerCase().includes(itemSearchTerm)
                             )
                         );
-                        // Devolvemos un nuevo objeto de envío solo con las cajas que coinciden
                         return { ...shipment, boxes: matchingBoxes };
-                    }).filter(shipment => shipment.boxes.length > 0); // Solo nos quedamos con envíos que tienen alguna caja coincidente
+                    }).filter(shipment => shipment.boxes.length > 0);
                     
                     filteredShipments = matchingShipments;
                 }
                 
                 renderAllShipments(filteredShipments);
-                generateAndRenderNotifications(shipments); // Las notificaciones se basan en la caché completa
+                generateAndRenderNotifications(localShipmentsCache); // Notificaciones siempre sobre el total
             };
 
             const renderAllShipments = (shipments) => {
                 if(!elements.pendingCount) return;
                 
+                // Los contadores siempre usan la caché completa, no los filtros de búsqueda
+                const pendingTotal = localShipmentsCache.filter(s => initialClassifications.get(s.firestoreId) === 'pending').length;
+                const partialTotal = localShipmentsCache.filter(s => initialClassifications.get(s.firestoreId) === 'partial').length;
+                const completedTotal = localShipmentsCache.filter(s => initialClassifications.get(s.firestoreId) === 'completed').length;
+
+                elements.pendingCount.textContent = pendingTotal;
+                elements.partialCount.textContent = partialTotal;
+                elements.completedCount.textContent = completedTotal;
+
+                // Los envíos a renderizar SÍ usan la lista filtrada
                 const pendingShipments = shipments.filter(s => initialClassifications.get(s.firestoreId) === 'pending');
                 const partialShipments = shipments.filter(s => initialClassifications.get(s.firestoreId) === 'partial');
                 const completedShipments = shipments.filter(s => initialClassifications.get(s.firestoreId) === 'completed');
                 
-                // Los contadores siempre usan la caché completa, no los filtros de búsqueda
-                elements.pendingCount.textContent = localShipmentsCache.filter(s => initialClassifications.get(s.firestoreId) === 'pending').length;
-                elements.partialCount.textContent = localShipmentsCache.filter(s => initialClassifications.get(s.firestoreId) === 'partial').length;
-                elements.completedCount.textContent = localShipmentsCache.filter(s => initialClassifications.get(s.firestoreId) === 'completed').length;
-                
                 let listToRender;
-                let emptyText = 'No hay envíos para mostrar.';
+                let emptyText = 'No hay envíos que coincidan con los filtros.';
                 switch(currentStatusFilter) {
                     case 'pending': listToRender = pendingShipments; emptyText = 'No hay envíos pendientes.'; break;
                     case 'partial': listToRender = partialShipments; emptyText = 'No hay envíos parcialmente recibidos.'; break;
@@ -334,7 +330,6 @@
                 elements.managementSection.style.display = localShipmentsCache.length > 0 ? 'block' : 'none';
             };
             
-            // **** 5. `renderShipmentList` ACTUALIZADA PARA MOSTRAR ARTÍCULOS ****
             const renderShipmentList = (shipmentList, container, emptyText) => {
                 if(!container) return;
                 container.innerHTML = '';
@@ -366,7 +361,7 @@
                     shipmentsForDate.forEach(shipment => {
                         const hasValidTimestamp = shipment.lastUpdated && typeof shipment.lastUpdated.toDate === 'function';
                         const isOverdue = hasValidTimestamp && (Date.now() - shipment.lastUpdated.toDate().getTime()) > (7 * 24 * 60 * 60 * 1000);
-                        const allBoxes = shipment.boxes || []; // Aseguramos que 'boxes' sea un array
+                        const allBoxes = shipment.boxes || [];
                         const deliveredBoxesCount = allBoxes.filter(b => b.delivered).length;
                         const isCompleted = allBoxes.length > 0 && deliveredBoxesCount === allBoxes.length;
                         const isSelected = shipmentsToDelete.has(shipment.firestoreId);
@@ -403,9 +398,7 @@
                         
                         const boxListContainer = shipmentCard.querySelector('.box-list');
                         
-                        // Iteramos sobre las cajas del envío
                         allBoxes.forEach(box => {
-                            // NUEVO: Generamos el HTML para la lista de artículos
                             const itemsHtml = (box.items || []).map(item => 
                                 `<li class="text-sm text-gray-600 ml-4">${item.qty} x ${item.desc} (${item.size}) [${item.code}]</li>`
                             ).join('');
@@ -413,7 +406,6 @@
                             const label = document.createElement('label');
                             label.className = `flex items-start p-3 rounded-lg transition-all duration-300 ${isDeleteModeActive ? 'cursor-default' : 'cursor-pointer hover:bg-gray-50'} ${box.delivered ? 'bg-gray-100 text-gray-500' : 'bg-white'}`;
                             
-                            // NUEVO: Insertamos la lista de artículos
                             label.innerHTML = `
                                 <input type="checkbox" ${box.delivered ? 'checked' : ''} class="h-6 w-6 rounded border-gray-400 text-gray-800 focus:ring-gray-500 mt-1 ${isDeleteModeActive ? 'cursor-not-allowed' : 'cursor-pointer'}" data-firestore-id="${shipment.firestoreId}" data-box-id="${box.id}" ${isDeleteModeActive ? 'disabled' : ''}>
                                 <div class="ml-4 flex-grow ${box.delivered ? 'line-through' : ''}">
@@ -430,7 +422,6 @@
                 });
             };
 
-            // **** 6. `extractDataFromPdf` RE-ESCRITA DESDE CERO ****
             const extractDataFromPdf = async (file) => {
                 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
                 const fileBuffer = await file.arrayBuffer();
@@ -442,12 +433,10 @@
                     rawTextItems.push(...textContent.items.map(item => item.str.trim()));
                 }
                 
-                // Unimos con saltos de línea para preservar la estructura de la tabla
                 const fullText = rawTextItems.join('\n');
 
-                // --- 1. Extraer datos principales ---
                 const orderIdRegex = /Shipping Order\s*([A-Z0-9]+)/i;
-                const dateRegex = /Shipping date\n(\d{1,2}\/\d{1,2}\/\d{4})/; // Modificado para que busque el salto de línea
+                const dateRegex = /Shipping date\n(\d{1,2}\/\d{1,2}\/\d{4})/;
                 const descRegex = /Order Description\s*([A-Z0-9-]+)/i;
                 
                 const orderIdMatch = fullText.match(orderIdRegex);
@@ -459,10 +448,8 @@
                 const descMatch = fullText.match(descRegex);
                 const orderDescription = descMatch ? descMatch[1] : "Sin Descripción";
                 
-                // Lógica de tipo basada en Order Description (COS- o CS-)
                 const type = (orderDescription.startsWith('CS-') || orderDescription.startsWith('COS-')) ? 'Pack' : 'B2B';
 
-                // --- 2. Extraer artículos del ORDER RECAP ---
                 const items = [];
                 const recapStartIndex = fullText.indexOf("ORDER RECAP");
                 
@@ -470,8 +457,6 @@
                     const recapText = fullText.substring(recapStartIndex);
                     const lines = recapText.split('\n');
                     
-                    // Regex para una fila de la tabla ORDER RECAP
-                    // (Code) (Description) (Size) (Qty) (Box ID)
                     const itemRegex = /^([A-Z0-9]{10,12})\s+(.*?)\s+([A-Z0-9/]{1,5})\s+(\d+)\s+(ND\d{10})$/;
                     
                     for (const line of lines) {
@@ -479,7 +464,7 @@
                         if (match) {
                             items.push({
                                 code: match[1],
-                                desc: match[2].trim().replace(/\s+/g, ' '), // Limpiamos espacios extra en la descripción
+                                desc: match[2].trim().replace(/\s+/g, ' '),
                                 size: match[3],
                                 qty: parseInt(match[4], 10),
                                 boxId: match[5]
@@ -488,7 +473,6 @@
                     }
                 }
 
-                // --- 3. Agrupar artículos por caja ---
                 const boxesMap = new Map();
                 for (const item of items) {
                     const { boxId, ...itemData } = item;
@@ -502,7 +486,6 @@
                     boxesMap.get(boxId).items.push(itemData);
                 }
 
-                // --- 4. Si no encontramos un ORDER RECAP, volvemos al método antiguo ---
                 if (items.length === 0) {
                     console.warn("No se encontró ORDER RECAP. Volviendo al escaneo de cajas simple.");
                     const boxIdRegex = /ND\d{10}/g;
@@ -513,7 +496,7 @@
                             boxesMap.set(boxId, {
                                 id: boxId,
                                 delivered: false,
-                                items: [] // Sin artículos porque no pudimos leerlos
+                                items: []
                             });
                         }
                     });
@@ -524,7 +507,6 @@
                 return { shippingOrderId, shippingDate, boxes, orderDescription, fileName: file.name, type };
             };
 
-            // **** 7. `handleFileSelect` ACTUALIZADA PARA LA NUEVA ESTRUCTURA ****
             const handleFileSelect = async (files) => {
                 if (!files || files.length === 0 || !shipmentsCollectionRef) return;
                 toggleLoader(true, `Procesando ${files.length} archivo(s)...`);
@@ -553,7 +535,7 @@
                             fileName: data.fileName,
                             shippingDate: data.shippingDate,
                             sortableDate: data.shippingDate.split('/').reverse().join('-'),
-                            boxes: data.boxes, // Aquí pasamos la estructura completa de cajas + artículos
+                            boxes: data.boxes,
                             lastUpdated: serverTimestamp(),
                             createdAt: serverTimestamp()
                         };
@@ -570,9 +552,7 @@
                  const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
                  
                  shipments.forEach(shipment => {
-                     // Comprobamos si el envío en sí es antiguo
                      if (shipment.createdAt && typeof shipment.createdAt.toDate === 'function' && shipment.createdAt.toDate().getTime() < sevenDaysAgo) {
-                         // Buscamos cajas sin entregar en este envío antiguo
                          (shipment.boxes || []).forEach(box => {
                              if (!box.delivered) {
                                  notifications.push(`¡Atención! La caja ${box.id} del pedido ${shipment.orderDescription} lleva más de 7 días sin recibirse.`);
@@ -581,7 +561,7 @@
                      }
                  });
                  
-                 const uniqueNotifications = [...new Set(notifications)]; // Evitar duplicados si hay muchas cajas
+                 const uniqueNotifications = [...new Set(notifications)];
 
                  if (uniqueNotifications.length > 0) {
                      elements.notificationBadge.textContent = uniqueNotifications.length;
@@ -602,7 +582,6 @@
                      const shipmentInCache = localShipmentsCache.find(s => s.firestoreId === firestoreId);
                      
                      if (shipmentInCache) {
-                          // Actualizamos la caja específica dentro del array 'boxes'
                           const updatedBoxes = shipmentInCache.boxes.map(b => 
                             b.id === boxId ? { ...b, delivered: target.checked } : b
                           );
@@ -613,7 +592,6 @@
                  }
             };
 
-            // **** 8. `showScanFeedback` ACTUALIZADA PARA MOSTRAR ARTÍCULOS ****
             const showScanFeedback = (bgColor, shipment, typeText, boxId = '') => {
                 elements.scanFeedbackOverlay.style.backgroundColor = bgColor;
                 
@@ -623,7 +601,6 @@
                     elements.scanFeedbackOrder.textContent = shipment.orderDescription;
                     elements.scanFeedbackDigits.textContent = shipment.orderDescription.slice(-4);
                     
-                    // Buscamos la caja escaneada para mostrar sus artículos
                     const scannedBox = (shipment.boxes || []).find(b => b.id.slice(-7) === boxId.slice(-7));
                     if (scannedBox && scannedBox.items && scannedBox.items.length > 0) {
                         itemsHtml = '<ul>' + scannedBox.items.map(item => 
@@ -636,13 +613,13 @@
                 }
                 
                 elements.scanFeedbackType.textContent = typeText;
-                elements.scanFeedbackItems.innerHTML = itemsHtml; // Añadimos la lista de artículos
+                elements.scanFeedbackItems.innerHTML = itemsHtml;
 
                 elements.scanFeedbackOverlay.classList.remove('opacity-0');
                 setTimeout(() => {
                     elements.scanFeedbackOverlay.classList.add('opacity-0');
                     elements.scannerInput.focus();
-                }, 2500); // Damos un poco más de tiempo para leer los artículos
+                }, 2500);
             };
 
             const performScanSearch = async () => {
@@ -906,11 +883,10 @@
                 elements.confirmDeleteBtn.addEventListener('click', executeDelete);
                 elements.cancelConfirmDeleteBtn.addEventListener('click', () => { elements.confirmDeleteModal.style.display = 'none'; });
                 
-                // **** 9. AÑADIR EVENT LISTENER AL NUEVO BUSCADOR ****
                 elements.itemSearchInput.addEventListener('input', applyAllFilters);
                 elements.boxSearchInput.addEventListener('input', applyAllFilters);
-
                 elements.dateFilterInput.addEventListener('change', applyAllFilters);
+                
                 elements.clearDateFilter.addEventListener('click', () => {
                     elements.dateFilterInput.value = '';
                     elements.itemSearchInput.value = '';
