@@ -45,7 +45,7 @@
                     <div class="space-y-1" id="status-filters">
                          <a href="#" data-filter="pending" class="nav-link flex items-center justify-between p-3 rounded-lg text-gray-700 hover:bg-gray-100 active"><span>Pendientes</span><span id="pending-count" class="ml-2 text-sm px-2 py-1 rounded-full bg-orange-200 text-orange-800">0</span></a>
                          <a href="#" data-filter="partial" class="nav-link flex items-center justify-between p-3 rounded-lg text-gray-700 hover:bg-gray-100"><span>Parcialmente Recibido</span><span id="partial-count" class="ml-2 text-sm px-2 py-1 rounded-full bg-yellow-200 text-yellow-800">0</span></a>
-              _            <a href="#" data-filter="completed" class="nav-link flex items-center justify-between p-3 rounded-lg text-gray-700 hover:bg-gray-100"><span>Completados</span><span id="completed-count" class="ml-2 text-sm px-2 py-1 rounded-full bg-green-200 text-green-800">0</span></a>
+                         <a href="#" data-filter="completed" class="nav-link flex items-center justify-between p-3 rounded-lg text-gray-700 hover:bg-gray-100"><span>Completados</span><span id="completed-count" class="ml-2 text-sm px-2 py-1 rounded-full bg-green-200 text-green-800">0</span></a>
                     </div>
                 </nav>
                 <div class="mt-auto">
@@ -102,7 +102,7 @@
                 </div>
                 
                 <div id="upload-panel" class="bg-white p-6 rounded-xl shadow-lg mb-8 border border-gray-200"><h2 class="text-2xl font-bold text-gray-800 mb-3">Cargar Documentos</h2><input type="file" accept=".pdf" id="file-input" class="hidden" multiple /><button id="upload-button" class="w-full bg-gray-800 text-white font-bold py-3 px-4 rounded-lg hover:bg-black transition-all text-lg flex items-center justify-center shadow-md"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>Cargar PDF(s)</button></div>
-        _       
+                
                 <div id="shipment-list-container" class="space-y-6"></div>
 
                 <div id="management-section" class="mt-12 text-center" style="display: none;"><button id="manage-shipments-button" class="bg-transparent text-gray-500 hover:text-black hover:underline font-semibold py-2 px-4 rounded-lg transition-all text-sm">Gestionar Envíos</button></div>
@@ -113,7 +113,7 @@
                     <div>
                         <h2 class="text-3xl font-bold text-gray-800 mb-4">Escáner de Cajas</h2>
                         <div class="mb-4">
-                            <label for="scanner-input" class="block text-sm font-medium text-gray-700 mb-1">1. Escanear con lector externo:</label>
+            _               <label for="scanner-input" class="block text-sm font-medium text-gray-700 mb-1">1. Escanear con lector externo:</label>
                             <div class="flex gap-2">
                                 <input type="text" id="scanner-input" placeholder="Haz clic aquí y escanea un código..." class="w-full border-2 border-gray-300 p-3 rounded-lg focus:border-black focus:ring-0">
                                 <button id="scanner-search-btn" class="bg-gray-800 text-white font-bold py-3 px-4 rounded-lg hover:bg-black transition-all">Buscar</button>
@@ -130,7 +130,7 @@
                             <div id="camera-container" class="hidden">
                                 <video id="camera-feed"></video>
                             </div>
-                        </div>
+          _             </div>
                     </div>
                 </div>
             </div>
@@ -152,7 +152,7 @@
         <div class="bg-white p-8 rounded-xl shadow-2xl w-11/12 max-w-md text-center">
             <h2 class="text-2xl font-bold text-gray-800 mb-4">Confirmar Eliminación</h2>
             <p id="confirm-delete-text" class="text-gray-600 mb-8"></p>
-      _       <div class="flex justify-center space-x-4">
+            <div class="flex justify-center space-x-4">
                  <button id="cancel-confirm-delete-btn" class="w-full bg-gray-200 text-gray-800 font-bold py-3 px-4 rounded-lg hover:bg-gray-300 transition-all text-lg">Cancelar</button>
                  <button id="confirm-delete-btn" class="w-full bg-red-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-red-700 transition-all text-lg shadow-md">Sí, eliminar</button>
             </div>
@@ -185,7 +185,7 @@
         import { getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, getDocs, serverTimestamp, setLogLevel, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         
-        // Import de la librería ZXing con la URL CORRECTA (¡ESTA ES LA LÍNEA CORREGIDA!)
+        // Import de la librería ZXing con la URL CORRECTA
         import { BrowserMultiFormatReader, NotFoundException } from "https://cdn.jsdelivr.net/npm/@zxing/library@latest/+esm";
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -229,14 +229,14 @@
                 confirmDeleteModal: document.getElementById('confirm-delete-modal'),
                 confirmDeleteText: document.getElementById('confirm-delete-text'),
                 confirmDeleteBtn: document.getElementById('confirm-delete-btn'),
-                cancelConfirmDeleteBtn: document.getElementById('cancel-confirm-delete-btn'),
+    _             cancelConfirmDeleteBtn: document.getElementById('cancel-confirm-delete-btn'),
                 boxSearchInput: document.getElementById('box-search-input'),
                 statusFilters: document.getElementById('status-filters'),
                 notificationBell: document.getElementById('notification-bell'),
                 notificationBadge: document.getElementById('notification-badge'),
                 notificationPanel: document.getElementById('notification-panel'),
                 notificationList: document.getElementById('notification-list'),
-          _       clearNotificationsBtn: document.getElementById('clear-notifications-btn'),
+                clearNotificationsBtn: document.getElementById('clear-notifications-btn'),
                 navChecklist: document.getElementById('nav-checklist'),
                 navScanner: document.getElementById('nav-scanner'),
                 checklistView: document.getElementById('checklist-view'),
@@ -248,7 +248,7 @@
                 scanFeedbackOrder: document.getElementById('scan-feedback-order'),
                 scanFeedbackType: document.getElementById('scan-feedback-type'),
                 dateFilterInput: document.getElementById('date-filter-input'),
-              _ clearDateFilter: document.getElementById('clear-date-filter'),
+                clearDateFilter: document.getElementById('clear-date-filter'),
                 cameraScanBtn: document.getElementById('camera-scan-btn'),
                 cameraContainer: document.getElementById('camera-container'),
                 cameraFeed: document.getElementById('camera-feed'),
@@ -376,7 +376,7 @@
                         const type = shipment.type || 'B2B';
                         const typeLabel = type === 'Pack' ? `<span class="text-xs font-bold px-2 py-1 rounded-full bg-blue-200 text-blue-800">Pack</span>` : `<span class="text-xs font-bold px-2 py-1 rounded-full bg-green-200 text-green-800">B2B</span>`;
                         
-    _                 shipmentCard.innerHTML = `
+                        shipmentCard.innerHTML = `
                             ${isDeleteModeActive ? `<input type="checkbox" class="shipment-select-checkbox h-6 w-6 rounded border-gray-400 text-gray-800 focus:ring-gray-500 cursor-pointer mt-1" data-firestore-id="${shipment.firestoreId}" ${isSelected ? 'checked' : ''}>` : ''}
                             <div class="flex-grow">
                                 <div class="border-b border-gray-200 pb-3 mb-3">
@@ -388,19 +388,19 @@
                                         </div>
                                         <div class="text-right space-y-2">
                                             <div class="font-bold text-sm px-3 py-1 rounded-full ${isCompleted ? 'bg-green-200 text-green-800' : `bg-yellow-200 text-yellow-800`}">${isCompleted ? 'Completado' : `Progreso: ${progressText}`}</div>
-                            _               <div>${typeLabel}</div>
+                                            <div>${typeLabel}</div>
                                         </div>
                                     </div>
                                     ${isOverdue && !isCompleted && initialClassifications.get(shipment.firestoreId) === 'partial' ? '<p class="text-sm font-bold text-red-600 mt-2">Este pedido lleva más de 7 días sin actualizarse.</p>' : ''}
                                 </div>
-              _               <div class="space-y-2 box-list"></div>
+                                <div class="space-y-2 box-list"></div>
                             </div>`;
                         
                         const boxListContainer = shipmentCard.querySelector('.box-list');
                         
                         allBoxes.forEach(box => {
                             const itemsHtml = (box.items || []).map(item => 
-                                `<li class="text-sm text-gray-600 ml-4">${item.qty} x ${item.desc} (${item.size}) [${item.code}]</li>`
+                        M       `<li class="text-sm text-gray-600 ml-4">${item.qty} x ${item.desc} (${item.size}) [${item.code}]</li>`
                             ).join('');
 
                             const label = document.createElement('label');
@@ -424,7 +424,7 @@
 
             const extractDataFromPdf = async (file) => {
                 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
-                const fileBuffer = await file.arrayBuffer();
+              _ const fileBuffer = await file.arrayBuffer();
                 const pdfDoc = await pdfjsLib.getDocument({ data: fileBuffer }).promise;
                 let rawTextItems = [];
                 for (let i = 1; i <= pdfDoc.numPages; i++) {
@@ -435,7 +435,7 @@
                 
                 const fullText = rawTextItems.join('\n');
 
-    _             const orderIdRegex = /Shipping Order\s*([A-Z0-9]+)/i;
+                const orderIdRegex = /Shipping Order\s*([A-Z0-9]+)/i;
                 const dateRegex = /Shipping date\n(\d{1,2}\/\d{1,2}\/\d{4})/;
                 const descRegex = /Order Description\s*([A-Z0-9-]+)/i;
                 
@@ -477,7 +477,7 @@
                 for (const item of items) {
                     const { boxId, ...itemData } = item;
                     if (!boxesMap.has(boxId)) {
-                  _     boxesMap.set(boxId, {
+                        boxesMap.set(boxId, {
                             id: boxId,
                             delivered: false,
                             items: []
@@ -498,8 +498,8 @@
                                 delivered: false,
                                 items: []
                             });
-              _         }
-          _         });
+                        }
+                    });
                 }
                 
                 const boxes = Array.from(boxesMap.values());
@@ -514,7 +514,7 @@
                 const fileProcessingPromises = Array.from(files).map(file => 
                     extractDataFromPdf(file).catch(error => { 
                         console.error(`Error procesando ${file.name}:`, error); 
-            _           return null; 
+                        return null; 
                     })
                 );
                 
@@ -532,13 +532,13 @@
                             id: data.shippingOrderId,
                             orderDescription: data.orderDescription,
                             type: data.type,
-                            fileName: data.fileName,
-                            shippingDate: data.shippingDate,
+      _                   fileName: data.fileName,
+            _               shippingDate: data.shippingDate,
                             sortableDate: data.shippingDate.split('/').reverse().join('-'),
                             boxes: data.boxes,
                             lastUpdated: serverTimestamp(),
                             createdAt: serverTimestamp()
-                        };
+                    D   };
                         batch.set(newDocRef, newShipment);
                     });
                     await batch.commit();
@@ -555,10 +555,10 @@
                      if (shipment.createdAt && typeof shipment.createdAt.toDate === 'function' && shipment.createdAt.toDate().getTime() < sevenDaysAgo) {
                          (shipment.boxes || []).forEach(box => {
                              if (!box.delivered) {
-        _                      notifications.push(`¡Atención! La caja ${box.id} del pedido ${shipment.orderDescription} lleva más de 7 días sin recibirse.`);
+                                 notifications.push(`¡Atención! La caja ${box.id} del pedido ${shipment.orderDescription} lleva más de 7 días sin recibirse.`);
                              }
                          });
-                     }
+</a>                  }
                  });
                  
                  const uniqueNotifications = [...new Set(notifications)];
@@ -588,12 +588,12 @@
                           
                           const docRef = doc(db, shipmentsCollectionRef.path, firestoreId);
                           await updateDoc(docRef, { boxes: updatedBoxes, lastUpdated: serverTimestamp() });
-    _               }
+                     }
                  }
             };
 
             const showScanFeedback = (bgColor, shipment, typeText, boxId = '') => {
-                elements.scanFeedbackOverlay.style.backgroundColor = bgColor;
+Note             elements.scanFeedbackOverlay.style.backgroundColor = bgColor;
                 
                 let itemsHtml = '<p>No hay información de artículos.</p>';
                 
@@ -618,7 +618,7 @@
                 elements.scanFeedbackOverlay.classList.remove('opacity-0');
                 setTimeout(() => {
                     elements.scanFeedbackOverlay.classList.add('opacity-0');
-                    elements.scannerInput.focus();
+e.g.                 elements.scannerInput.focus();
                 }, 2500);
             };
 
@@ -656,8 +656,8 @@
                     }
                 } else {
                     showScanFeedback('#ef4444', null, 'CAJA NO ENCONTRADA', barcode);
-                }
-        _   };
+              }
+            };
 
             const stopCamera = () => {
                 if (codeReader) {
@@ -719,7 +719,7 @@
                 elements.selectionCounter.textContent = `${count} envío(s) seleccionado(s)`;
                 elements.deleteSelectedButton.disabled = count === 0;
                 const allVisibleShipments = getVisibleShipmentIds();
-                const allSelected = allVisibleShipments.length > 0 && allVisibleShipments.every(id => shipmentsToDelete.has(id));
+Click             const allSelected = allVisibleShipments.length > 0 && allVisibleShipments.every(id => shipmentsToDelete.has(id));
                 elements.selectAllButton.textContent = allSelected ? 'Deseleccionar Todo' : 'Seleccionar Todo';
             };
             
@@ -743,14 +743,14 @@
                 const visibleShipmentIds = getVisibleShipmentIds();
                 const allSelected = visibleShipmentIds.length > 0 && visibleShipmentIds.every(id => shipmentsToDelete.has(id));
 
-</i>             if (allSelected) {
+                if (allSelected) {
                     visibleShipmentIds.forEach(id => shipmentsToDelete.delete(id));
                 } else {
                     visibleShipmentIds.forEach(id => shipmentsToDelete.add(id));
                 }
                 updateDeleteControls();
                 updateAllViews(localShipmentsCache);
-  *         };
+            };
 
             const handleDeleteSelected = () => {
                 const count = shipmentsToDelete.size; if (count === 0) return;
@@ -762,18 +762,18 @@
                 toggleLoader(true, `Eliminando ${shipmentsToDelete.size} envío(s)...`);
                 const batch = writeBatch(db);
                 shipmentsToDelete.forEach(id => {
-                    const docRef = doc(db, shipmentsCollectionRef.path, id); batch.delete(docRef);
+    content               const docRef = doc(db, shipmentsCollectionRef.path, id); batch.delete(docRef);
                 });
                 await batch.commit();
                 toggleLoader(false); toggleDeleteMode(false);
                 elements.confirmDeleteModal.style.display = 'none';
-            };
+Note         };
 
             const connectToFirebase = async (city) => {
                 toggleLoader(true, `Conectando a ${city}...`);
                 currentCity = city;
                 localStorage.setItem('extremaduraSportSelectedCity', city);
-                elements.cityDisplay.textContent = city;
+image               elements.cityDisplay.textContent = city;
                 elements.citySelectorView.style.display = 'none';
                 elements.appWrapper.style.display = 'block';
                 elements.sideMenuContainer.style.display = 'block';
@@ -783,33 +783,33 @@
                     if (getApps().length === 0) {
                         app = initializeApp(firebaseConfig);
                     } else {
-                        app = getApp();
+                      t app = getApp();
                     }
                     db = getFirestore(app);
-                    const auth = getAuth(app);
+Click                   const auth = getAuth(app);
                     setLogLevel('error');
                     
                     if (!auth.currentUser) {
                         await signInAnonymously(auth);
                     }
                     
-                    if (unsubscribeFromShipments) { 
+    á               if (unsubscribeFromShipments) { 
                         unsubscribeFromShipments(); 
                         unsubscribeFromShipments = null; 
                     }
-                    
+                   static
                     const collectionPath = `projects/${projectId}/data/${city.toLowerCase()}/shipments`;
                     shipmentsCollectionRef = collection(db, collectionPath);
                     unsubscribeFromShipments = onSnapshot(shipmentsCollectionRef, (snapshot) => {
                         localShipmentsCache = snapshot.docs.map(doc => ({ firestoreId: doc.id, ...doc.data() }));
                         
-  _                   initialClassifications.clear();
+                        initialClassifications.clear();
                         localShipmentsCache.forEach(s => {
                             const totalBoxes = (s.boxes || []).length;
-                            const deliveredBoxes = (s.boxes || []).filter(b => b.delivered).length;
+          _                 const deliveredBoxes = (s.boxes || []).filter(b => b.delivered).length;
                             let status = 'pending';
                             if (deliveredBoxes === totalBoxes && totalBoxes > 0) {
-</a>                              status = 'completed';
+                                status = 'completed';
                             } else if (deliveredBoxes > 0) {
                                 status = 'partial';
                             }
@@ -817,76 +817,76 @@
                         });
 
                         updateAllViews(localShipmentsCache);
-                        toggleLoader(false);
-                Note      }, error => {
+D                       toggleLoader(false);
+                    }, error => {
                         console.error("Error de Firestore:", error);
-                        alert("No se pudo conectar a la base de datos.");
+all                       alert("No se pudo conectar a la base de datos.");
                         toggleLoader(false);
                     });
                 } catch (error) {
-                    console.error("Firebase init failed:", error);
+Read                 console.error("Firebase init failed:", error);
                     alert("Error fatal. Refresca la página.");
                     toggleLoader(false);
                 }
             };
             
             const main = () => {
-                elements.appVersion.textContent = APP_VERSION;
+Note               elements.appVersion.textContent = APP_VERSION;
                 const savedCity = localStorage.getItem('extremaduraSportSelectedCity');
                 if (savedCity) {
                     connectToFirebase(savedCity);
-".               } else {
+                } else {
                     elements.citySelectorView.style.display = 'flex';
                     elements.appWrapper.style.display = 'none';
                     elements.sideMenuContainer.style.display = 'none';
-                }
+DB               }
                 
                 elements.openMenuButton.addEventListener('click', () => toggleMenu(true));
                 elements.closeMenuButton.addEventListener('click', () => toggleMenu(false));
                 elements.menuOverlay.addEventListener('click', () => toggleMenu(false));
                 
                 document.querySelectorAll('.city-btn').forEach(btn => {
-Note                 btn.addEventListener('click', () => {
+                    btn.addEventListener('click', () => {
                         connectToFirebase(btn.dataset.city);
                     });
                 });
 
                 elements.changeCityButton.addEventListener('click', () => {
-                    localStorage.removeItem('extremaduraSportSelectedCity');
+content                 localStorage.removeItem('extremaduraSportSelectedCity');
                     location.reload();
                 });
                 
                 elements.uploadButton.addEventListener('click', () => elements.fileInput.click());
-e.g.             elements.fileInput.addEventListener('change', (event) => handleFileSelect(event.target.files));
+                elements.fileInput.addEventListener('change', (event) => handleFileSelect(event.target.files));
                 
                 elements.statusFilters.addEventListener('click', (e) => {
-                    const link = e.target.closest('.nav-link');
+Note                 const link = e.target.closest('.nav-link');
                     if(link){
                         e.preventDefault();
                         
                         if (elements.scannerView.classList.contains('active')) {
-                            switchView('checklist');
+Note                       switchView('checklist');
                         }
 
                         currentStatusFilter = link.dataset.filter;
                         elements.statusFilters.querySelectorAll('a').forEach(a => a.classList.remove('active'));
                         link.classList.add('active');
                         updateAllViews(localShipmentsCache);
-TODO                   toggleMenu(false);
-                    }
-          _     });
+                        toggleMenu(false);
+        _           }
+                });
 
                 elements.manageShipmentsButton.addEventListener('click', () => toggleDeleteMode(true));
                 elements.cancelDeleteButton.addEventListener('click', () => toggleDeleteMode(false));
                 elements.deleteSelectedButton.addEventListener('click', handleDeleteSelected);
-e.g.             elements.selectAllButton.addEventListener('click', handleSelectAllToggle);
-                elements.confirmDeleteBtn.addEventListener('click', executeDelete);
+                elements.selectAllButton.addEventListener('click', handleSelectAllToggle);
+e.g.             elements.confirmDeleteBtn.addEventListener('click', executeDelete);
                 elements.cancelConfirmDeleteBtn.addEventListener('click', () => { elements.confirmDeleteModal.style.display = 'none'; });
                 
                 elements.itemSearchInput.addEventListener('input', applyAllFilters);
                 elements.boxSearchInput.addEventListener('input', applyAllFilters);
                 elements.dateFilterInput.addEventListener('change', applyAllFilters);
-tr               
+Note               
                 elements.clearDateFilter.addEventListener('click', () => {
                     elements.dateFilterInput.value = '';
                     elements.itemSearchInput.value = '';
@@ -895,32 +895,32 @@ Note                 elements.boxSearchInput.value = '';
                 });
                 
                 elements.navChecklist.addEventListener('click', (e) => { e.preventDefault(); switchView('checklist'); toggleMenu(false); });
-Note               elements.navScanner.addEventListener('click', (e) => { e.preventDefault(); switchView('scanner'); toggleMenu(false); });
+                elements.navScanner.addEventListener('click', (e) => { e.preventDefault(); switchView('scanner'); toggleMenu(false); });
                 
-                elements.scannerInput.addEventListener('input', () => {
+    Two           elements.scannerInput.addEventListener('input', () => {
                     clearTimeout(scanTimeout);
                     scanTimeout = setTimeout(performScanSearch, 1500);
-                });
+Note               });
 
                 elements.scannerSearchBtn.addEventListener('click', () => {
-Note                 clearTimeout(scanTimeout);
-      _             performScanSearch();
-  á           });
+                    clearTimeout(scanTimeout);
+                    performScanSearch();
+                });
 
                 elements.cameraScanBtn.addEventListener('click', () => {
-                    if (isCameraRunning) {
+á                 if (isCameraRunning) {
                         stopCamera();
                     } else {
-                        startCamera();
-Note                 }
+                    V startCamera();
+                    }
                 });
 
-      _         elements.notificationBell.addEventListener('click', () => elements.notificationPanel.classList.toggle('hidden'));
-                elements.clearNotificationsBtn.addEventListener('click', () => {
+                elements.notificationBell.addEventListener('click', () => elements.notificationPanel.classList.toggle('hidden'));
+i               elements.clearNotificationsBtn.addEventListener('click', () => {
                     elements.notificationList.innerHTML = '<p class="text-gray-500 text-center p-4">No hay notificaciones</p>';
                     elements.notificationBadge.style.display = 'none';
-            Click       elements.notificationPanel.classList.add('hidden');
-                });
+                    elements.notificationPanel.classList.add('hidden');
+s             });
 
                 document.body.addEventListener('change', (e) => { handleCheckChange(e); handleShipmentSelect(e); });
             };
