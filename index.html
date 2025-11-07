@@ -692,6 +692,10 @@
         // Import de ZXing
         import { BrowserMultiFormatReader, NotFoundException } from "https://cdn.jsdelivr.net/npm/@zxing/library@latest/+esm";
 
+        // ==================================================
+        // INICIO DE LA LÓGICA DEL SCRIPT
+        // ==================================================
+
         document.addEventListener('DOMContentLoaded', () => {
             const APP_VERSION = "v7.0-MD3";
             let db; let shipmentsCollectionRef; let localShipmentsCache = [];
@@ -705,70 +709,22 @@
             let isCameraRunning = false;
 
             // Objeto de elementos de la UI de Material
-            const elements = {
-                citySelectorDialog: document.getElementById('city-selector-dialog'),
-                appWrapper: document.getElementById('app-wrapper'),
-                sideMenu: document.getElementById('side-menu'),
-                openMenuButton: document.getElementById('open-menu-button'),
-                changeCityButton: document.getElementById('change-city-button'),
-                cityDisplay: document.getElementById('city-display'),
-                uploadButton: document.getElementById('upload-button'),
-                fileInput: document.getElementById('file-input'),
-                loaderOverlay: document.getElementById('loader-overlay'),
-                loaderText: document.getElementById('loader-text'),
-                managementSection: document.getElementById('management-section'),
-                manageShipmentsButton: document.getElementById('manage-shipments-button'),
-                pendingCount: document.getElementById('pending-count'),
-                partialCount: document.getElementById('partial-count'),
-                completedCount: document.getElementById('completed-count'),
-                shipmentListContainer: document.getElementById('shipment-list-container'),
-                deleteControls: document.getElementById('delete-controls'),
-                selectionCounter: document.getElementById('selection-counter'),
-                deleteSelectedButton: document.getElementById('delete-selected-button'),
-                cancelDeleteButton: document.getElementById('cancel-delete-button'),
-                selectAllButton: document.getElementById('select-all-button'),
-                confirmDeleteModal: document.getElementById('confirm-delete-modal'),
-                confirmDeleteText: document.getElementById('confirm-delete-text'),
-                confirmDeleteBtn: document.getElementById('confirm-delete-btn'),
-                cancelConfirmDeleteBtn: document.getElementById('cancel-confirm-delete-btn'),
-                boxSearchInput: document.getElementById('box-search-input'),
-                itemSearchInput: document.getElementById('item-search-input'),
-                statusTabs: document.getElementById('status-tabs'),
-                statusFilters: document.getElementById('status-filters'), // En el menú
-                notificationBell: document.getElementById('notification-bell'),
-                notificationBadge: document.getElementById('notification-badge'),
-                notificationPanel: document.getElementById('notification-panel'),
-                notificationList: document.getElementById('notification-list'),
-                clearNotificationsBtn: document.getElementById('clear-notifications-btn'),
-                navChecklist: document.getElementById('nav-checklist'),
-                navScanner: document.getElementById('nav-scanner'),
-                checklistView: document.getElementById('checklist-view'),
-                scannerView: document.getElementById('scanner-view'),
-                scannerInput: document.getElementById('scanner-input'),
-                scannerSearchBtn: document.getElementById('scanner-search-btn'),
-                scanFeedbackOverlay: document.getElementById('scan-feedback-overlay'),
-                scanFeedbackDigits: document.getElementById('scan-feedback-digits'),
-                scanFeedbackOrder: document.getElementById('scan-feedback-order'),
-                scanFeedbackType: document.getElementById('scan-feedback-type'),
-                scanFeedbackItems: document.getElementById('scan-feedback-items'),
-                dateFilterInput: document.getElementById('date-filter-input'),
-                clearDateFilter: document.getElementById('clear-date-filter'),
-                cameraScanBtn: document.getElementById('camera-scan-btn'),
-                cameraContainer: document.getElementById('camera-container'),
-                cameraFeed: document.getElementById('camera-feed')
-            };
+            // ¡IMPORTANTE! Se declara vacío y se rellena DESPUÉS de que MWC cargue.
+            let elements = {};
 
             const toggleLoader = (show, text = '') => {
-                elements.loaderText.textContent = text;
-                if (show) {
-                    elements.loaderOverlay.classList.add('active');
-                } else {
-                    elements.loaderOverlay.classList.remove('active');
+                if (elements.loaderText) elements.loaderText.textContent = text;
+                if (elements.loaderOverlay) {
+                    if (show) {
+                        elements.loaderOverlay.classList.add('active');
+                    } else {
+                        elements.loaderOverlay.classList.remove('active');
+                    }
                 }
             };
             
             const toggleMenu = (show) => {
-                elements.sideMenu.open = show;
+                if (elements.sideMenu) elements.sideMenu.open = show;
             };
 
             const applyAllFilters = () => {
@@ -776,14 +732,14 @@
             }
 
             // ==================================================
-            // SECCIÓN 1 DE CÓDIGO MODIFICADA
+            // SECCIÓN 1 DE CÓDIGO MODIFICADA (updateAllViews)
             // ==================================================
+            // Esta función ahora es segura porque 'elements' solo se rellena
+            // después de que MWC haya cargado, por lo que '.value' siempre existirá.
             const updateAllViews = (shipments) => {
-                // FALLO ARREGLADO: Comprobar que '.value' existe antes de usar '.trim()'
-                // Esto evita el crash si MWC no se ha cargado a tiempo.
-                const boxSearchTerm = (elements.boxSearchInput && elements.boxSearchInput.value) ? elements.boxSearchInput.value.trim() : '';
-                const itemSearchTerm = (elements.itemSearchInput && elements.itemSearchInput.value) ? elements.itemSearchInput.value.trim().toLowerCase() : '';
-                const dateFilter = (elements.dateFilterInput && elements.dateFilterInput.value) ? elements.dateFilterInput.value : '';
+                const boxSearchTerm = elements.boxSearchInput.value.trim();
+                const itemSearchTerm = elements.itemSearchInput.value.trim().toLowerCase();
+                const dateFilter = elements.dateFilterInput.value;
                 
                 let filteredShipments = shipments;
 
@@ -818,6 +774,7 @@
             // ==================================================
             // FIN DE LA SECCIÓN 1
             // ==================================================
+
 
             const renderAllShipments = (shipments) => {
                 if(!elements.pendingCount) return;
@@ -1023,7 +980,7 @@
                 });
             };
             
-            // --- Lógica de la App (casi sin cambios) ---
+            // --- Lógica de la App (sin cambios) ---
 
             const extractDataFromPdf = async (file) => {
                 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
@@ -1341,7 +1298,7 @@
             };
 
             const getVisibleShipmentIds = () => {
-                 const searchTerm = (elements.boxSearchInput && elements.boxSearchInput.value) ? elements.boxSearchInput.value.trim() : '';
+                 const searchTerm = elements.boxSearchInput.value.trim();
                  return localShipmentsCache
                      .filter(s => searchTerm.length < 4 || s.boxes.some(b => b.id.endsWith(searchTerm)))
                      .map(s => s.firestoreId);
@@ -1430,16 +1387,79 @@
                     toggleLoader(false);
                 }
             };
-            
+
             // ==================================================
-            // SECCIÓN 2 DE CÓDIGO MODIFICADA
+            // SECCIÓN 2 DE CÓDIGO MODIFICADA (main)
             // ==================================================
-            const main = async () => { // <--- Convertida en 'async'
+
+            // 1. Rellenar el objeto 'elements' DESPUÉS de que MWC cargue
+            function initializeElements() {
+                elements = {
+                    citySelectorDialog: document.getElementById('city-selector-dialog'),
+                    appWrapper: document.getElementById('app-wrapper'),
+                    sideMenu: document.getElementById('side-menu'),
+                    openMenuButton: document.getElementById('open-menu-button'),
+                    changeCityButton: document.getElementById('change-city-button'),
+                    cityDisplay: document.getElementById('city-display'),
+                    uploadButton: document.getElementById('upload-button'),
+                    fileInput: document.getElementById('file-input'),
+                    loaderOverlay: document.getElementById('loader-overlay'),
+                    loaderText: document.getElementById('loader-text'),
+                    managementSection: document.getElementById('management-section'),
+                    manageShipmentsButton: document.getElementById('manage-shipments-button'),
+                    pendingCount: document.getElementById('pending-count'),
+                    partialCount: document.getElementById('partial-count'),
+                    completedCount: document.getElementById('completed-count'),
+                    shipmentListContainer: document.getElementById('shipment-list-container'),
+                    deleteControls: document.getElementById('delete-controls'),
+                    selectionCounter: document.getElementById('selection-counter'),
+                    deleteSelectedButton: document.getElementById('delete-selected-button'),
+                    cancelDeleteButton: document.getElementById('cancel-delete-button'),
+                    selectAllButton: document.getElementById('select-all-button'),
+                    confirmDeleteModal: document.getElementById('confirm-delete-modal'),
+                    confirmDeleteText: document.getElementById('confirm-delete-text'),
+                    confirmDeleteBtn: document.getElementById('confirm-delete-btn'),
+                    cancelConfirmDeleteBtn: document.getElementById('cancel-confirm-delete-btn'),
+                    boxSearchInput: document.getElementById('box-search-input'),
+                    itemSearchInput: document.getElementById('item-search-input'),
+                    statusTabs: document.getElementById('status-tabs'),
+                    statusFilters: document.getElementById('status-filters'),
+                    notificationBell: document.getElementById('notification-bell'),
+                    notificationBadge: document.getElementById('notification-badge'),
+                    notificationPanel: document.getElementById('notification-panel'),
+                    notificationList: document.getElementById('notification-list'),
+                    clearNotificationsBtn: document.getElementById('clear-notifications-btn'),
+                    navChecklist: document.getElementById('nav-checklist'),
+                    navScanner: document.getElementById('nav-scanner'),
+                    checklistView: document.getElementById('checklist-view'),
+                    scannerView: document.getElementById('scanner-view'),
+                    scannerInput: document.getElementById('scanner-input'),
+                    scannerSearchBtn: document.getElementById('scanner-search-btn'),
+                    scanFeedbackOverlay: document.getElementById('scan-feedback-overlay'),
+                    scanFeedbackDigits: document.getElementById('scan-feedback-digits'),
+                    scanFeedbackOrder: document.getElementById('scan-feedback-order'),
+                    scanFeedbackType: document.getElementById('scan-feedback-type'),
+                    scanFeedbackItems: document.getElementById('scan-feedback-items'),
+                    dateFilterInput: document.getElementById('date-filter-input'),
+                    clearDateFilter: document.getElementById('clear-date-filter'),
+                    cameraScanBtn: document.getElementById('camera-scan-btn'),
+                    cameraContainer: document.getElementById('camera-container'),
+                    cameraFeed: document.getElementById('camera-feed')
+                };
+            }
+
+            // 2. Función 'main' asíncrona que espera a MWC
+            const main = async () => { 
                 
-                // ESPERAR a que los componentes MWC estén listos
                 try {
-                    // Esperamos a que un componente clave (como el botón) esté definido
-                    await customElements.whenDefined('md-filled-button');
+                    // Esperamos a los componentes clave que necesitamos al inicio
+                    await Promise.all([
+                        customElements.whenDefined('md-filled-button'),
+                        customElements.whenDefined('md-dialog'),
+                        customElements.whenDefined('md-outlined-text-field'), // El que da problemas
+                        customElements.whenDefined('md-tabs'),
+                        customElements.whenDefined('md-navigation-drawer')
+                    ]);
                     console.log("Material Web Components cargados y listos.");
                 } catch (e) {
                     console.error("No se pudieron cargar los Componentes Material:", e);
@@ -1447,9 +1467,11 @@
                     return; // No continuar si la UI falla
                 }
 
-                // --- AHORA el resto del código se ejecuta de forma segura ---
+                // 3. AHORA que MWC está listo, rellenamos el objeto 'elements'
+                initializeElements();
+                console.log("Elementos de la UI inicializados.");
 
-                // No mostrar la app hasta que se seleccione ciudad
+                // 4. AHORA el resto del código se ejecuta de forma segura
                 const savedCity = localStorage.getItem('extremaduraSportSelectedCity');
                 if (savedCity) {
                     connectToFirebase(savedCity);
@@ -1477,7 +1499,6 @@
                      const link = e.target.closest('md-list-item');
                      if(link && link.dataset.filter){
                         currentStatusFilter = link.dataset.filter;
-                        // Sincronizar Tabs con Menú
                         elements.statusTabs.activeTabIndex = Array.from(elements.statusTabs.tabs).findIndex(t => t.dataset.filter === currentStatusFilter);
                         elements.statusFilters.querySelectorAll('.filter-link').forEach(a => a.active = false);
                         link.active = true;
@@ -1490,7 +1511,6 @@
                 
                 elements.statusTabs.addEventListener('change', (e) => {
                     currentStatusFilter = e.target.activeTab.dataset.filter;
-                    // Sincronizar Menú con Tabs
                     elements.statusFilters.querySelectorAll('.filter-link').forEach(a => a.active = (a.dataset.filter === currentStatusFilter));
                     updateAllViews(localShipmentsCache);
                 });
