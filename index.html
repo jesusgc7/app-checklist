@@ -775,11 +775,15 @@
                 updateAllViews(localShipmentsCache);
             }
 
+            // ==================================================
+            // SECCIÓN 1 DE CÓDIGO MODIFICADA
+            // ==================================================
             const updateAllViews = (shipments) => {
-                // FALLO ARREGLADO: Comprobar que los elementos existen antes de usar .value
-                const boxSearchTerm = elements.boxSearchInput ? elements.boxSearchInput.value.trim() : '';
-                const itemSearchTerm = elements.itemSearchInput ? elements.itemSearchInput.value.trim().toLowerCase() : '';
-                const dateFilter = elements.dateFilterInput ? elements.dateFilterInput.value : '';
+                // FALLO ARREGLADO: Comprobar que '.value' existe antes de usar '.trim()'
+                // Esto evita el crash si MWC no se ha cargado a tiempo.
+                const boxSearchTerm = (elements.boxSearchInput && elements.boxSearchInput.value) ? elements.boxSearchInput.value.trim() : '';
+                const itemSearchTerm = (elements.itemSearchInput && elements.itemSearchInput.value) ? elements.itemSearchInput.value.trim().toLowerCase() : '';
+                const dateFilter = (elements.dateFilterInput && elements.dateFilterInput.value) ? elements.dateFilterInput.value : '';
                 
                 let filteredShipments = shipments;
 
@@ -811,6 +815,9 @@
                 renderAllShipments(filteredShipments);
                 generateAndRenderNotifications(localShipmentsCache);
             };
+            // ==================================================
+            // FIN DE LA SECCIÓN 1
+            // ==================================================
 
             const renderAllShipments = (shipments) => {
                 if(!elements.pendingCount) return;
@@ -1334,7 +1341,7 @@
             };
 
             const getVisibleShipmentIds = () => {
-                 const searchTerm = elements.boxSearchInput.value.trim();
+                 const searchTerm = (elements.boxSearchInput && elements.boxSearchInput.value) ? elements.boxSearchInput.value.trim() : '';
                  return localShipmentsCache
                      .filter(s => searchTerm.length < 4 || s.boxes.some(b => b.id.endsWith(searchTerm)))
                      .map(s => s.firestoreId);
@@ -1424,9 +1431,24 @@
                 }
             };
             
-            // --- Función Principal (Event Listeners) ---
-            
-            const main = () => {
+            // ==================================================
+            // SECCIÓN 2 DE CÓDIGO MODIFICADA
+            // ==================================================
+            const main = async () => { // <--- Convertida en 'async'
+                
+                // ESPERAR a que los componentes MWC estén listos
+                try {
+                    // Esperamos a que un componente clave (como el botón) esté definido
+                    await customElements.whenDefined('md-filled-button');
+                    console.log("Material Web Components cargados y listos.");
+                } catch (e) {
+                    console.error("No se pudieron cargar los Componentes Material:", e);
+                    alert("Error fatal: No se pudo cargar la interfaz de Material Design. Revisa la consola.");
+                    return; // No continuar si la UI falla
+                }
+
+                // --- AHORA el resto del código se ejecuta de forma segura ---
+
                 // No mostrar la app hasta que se seleccione ciudad
                 const savedCity = localStorage.getItem('extremaduraSportSelectedCity');
                 if (savedCity) {
@@ -1522,7 +1544,10 @@
                 document.body.addEventListener('change', (e) => { handleCheckChange(e); handleShipmentSelect(e); });
             };
 
-            main();
+            main(); // Llamar a la función principal
+            // ==================================================
+            // FIN DE LA SECCIÓN 2
+            // ==================================================
         });
     </script>
 </body>
