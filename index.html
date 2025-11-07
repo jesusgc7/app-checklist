@@ -4,169 +4,657 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestión de Recepción - ExtremaduraSport</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@material/web/all.js?module"></script>
+    
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Titillium+Web:wght@400;600;700;900&display=swap');
-        body { font-family: 'Titillium Web', sans-serif; background-color: #f4f7f6; }
-        .modal-overlay,.loader-overlay,.feedback-overlay{position:fixed;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:9999;transition:opacity .3s}.loader{border:8px solid #e0e0e0;border-top:8px solid #111827;border-radius:50%;width:60px;height:60px;animation:spin 1s linear infinite}@keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}#menu-overlay{transition:opacity .3s ease-in-out}#side-menu{transition:transform .3s ease-in-out}
+        :root {
+            /* Paleta de Material 3 (Ejemplo) */
+            --md-sys-color-primary: #006a6a;
+            --md-sys-color-on-primary: #ffffff;
+            --md-sys-color-primary-container: #9cf2f1;
+            --md-sys-color-on-primary-container: #002020;
+            --md-sys-color-secondary: #4a6363;
+            --md-sys-color-on-secondary: #ffffff;
+            --md-sys-color-secondary-container: #cde8e7;
+            --md-sys-color-on-secondary-container: #051f1f;
+            --md-sys-color-error: #ba1a1a;
+            --md-sys-color-on-error: #ffffff;
+            --md-sys-color-error-container: #ffdad6;
+            --md-sys-color-on-error-container: #410002;
+            --md-sys-color-background: #f4fcfc;
+            --md-sys-color-on-background: #161c1c;
+            --md-sys-color-surface: #f4fcfc;
+            --md-sys-color-on-surface: #161c1c;
+            --md-sys-color-surface-variant: #dae5e4;
+            --md-sys-color-on-surface-variant: #3f4948;
+            --md-sys-color-outline: #6f7978;
+            --md-sys-color-surface-container-highest: #e0e3e2;
+            --md-sys-color-surface-bright: #f4fcfc;
+
+            /* Aplicar fuente base */
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--md-sys-color-background);
+            color: var(--md-sys-color-on-background);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+        }
+        
+        /* Contenedor principal para el layout con Top-App-Bar */
+        .main-layout {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        md-top-app-bar {
+            --md-sys-color-primary: #111827; /* Header oscuro */
+            --md-sys-color-on-primary: #ffffff;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .app-title {
+            font-family: 'Titillium Web', sans-serif;
+            font-weight: 900;
+            font-style: italic;
+            letter-spacing: 0.05em;
+        }
+        
+        .app-subtitle {
+             font-family: 'Titillium Web', sans-serif;
+             font-size: 0.8rem;
+             font-weight: 600;
+             text-transform: uppercase;
+             color: var(--md-sys-color-on-surface-variant);
+             text-align: center;
+             margin-top: -8px;
+        }
+
+        main {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 16px;
+            padding-bottom: 80px; /* Espacio para barra de gestión */
+        }
+        
+        /* Vistas de la App */
         .app-view { display: none; }
         .app-view.active { display: block; }
-        .nav-link.active{background-color:#f3f4f6;font-weight:700}
-        #camera-feed { width: 100%; max-height: 70vh; border-radius: 0.5rem; }
+        
+        /* Contenedores */
+        .view-container, .card-container {
+            max-width: 900px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .filter-card, .upload-card {
+            padding: 16px;
+            border: 1px solid var(--md-sys-color-outline);
+            border-radius: 12px;
+            background-color: var(--md-sys-color-surface-bright);
+        }
+        
+        h2.card-title {
+            font-family: 'Titillium Web', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0 0 16px 0;
+            color: var(--md-sys-color-primary);
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        
+        md-filled-button, md-outlined-button, md-text-button {
+            width: 100%;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 16px;
+        }
+
+        /* Estilos de la lista de envíos */
+        .shipment-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        
+        .date-header {
+            font-family: 'Titillium Web', sans-serif;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--md-sys-color-on-background);
+            border-bottom: 2px solid var(--md-sys-color-primary-container);
+            padding-bottom: 8px;
+            margin-top: 16px;
+        }
+        
+        .shipment-card {
+            --md-elevation-level: 1;
+            border-radius: 12px;
+            background-color: var(--md-sys-color-surface-bright);
+            overflow: hidden;
+            display: flex;
+            border-left: 4px solid var(--md-sys-color-surface-variant);
+            transition: all 0.3s ease;
+        }
+        
+        .shipment-card.is-selected {
+            border-left-color: var(--md-sys-color-primary);
+            background-color: var(--md-sys-color-primary-container);
+        }
+        
+        .shipment-card.is-overdue {
+            border-left-color: var(--md-sys-color-error);
+            background-color: var(--md-sys-color-error-container);
+        }
+        
+        .shipment-card-content {
+            padding: 16px;
+            flex-grow: 1;
+        }
+
+        .shipment-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--md-sys-color-surface-container-highest);
+            margin-bottom: 12px;
+        }
+        
+        .shipment-card-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin: 0;
+        }
+        
+        .shipment-card-subtitle, .shipment-card-filename {
+            font-size: 0.8rem;
+            color: var(--md-sys-color-on-surface-variant);
+            margin: 0;
+        }
+        
+        .shipment-card-tags {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        
+        .chip {
+            font-size: 0.75rem;
+            font-weight: 500;
+            padding: 4px 10px;
+            border-radius: 16px;
+        }
+        
+        .chip-progress {
+            background-color: var(--md-sys-color-secondary-container);
+            color: var(--md-sys-color-on-secondary-container);
+        }
+
+        .chip-completed {
+            background-color: #C8E6C9; /* Verde (no en M3 por defecto) */
+            color: #1B5E20;
+        }
+        
+        .chip-type-b2b {
+            background-color: #D1C4E9; /* Morado */
+            color: #311B92;
+        }
+        
+        .chip-type-pack {
+            background-color: #BBDEFB; /* Azul */
+            color: #0D47A1;
+        }
+        
+        .overdue-text {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--md-sys-color-error);
+            margin-top: 8px;
+        }
+
+        .box-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .box-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px;
+            border-radius: 8px;
+            transition: background-color 0.3s ease;
+        }
+        
+        .box-item:not(.is-delete-mode) {
+             cursor: pointer;
+        }
+        
+         .box-item:not(.is-delete-mode):hover {
+            background-color: var(--md-sys-color-surface-container-highest);
+         }
+        
+        .box-item.is-delivered {
+            background-color: #f5f5f5;
+            color: var(--md-sys-color-on-surface-variant);
+        }
+        
+        .box-item md-checkbox {
+            margin-top: 4px; /* Alinear con el texto */
+        }
+        
+        .box-item-details {
+            flex-grow: 1;
+            font-family: 'Roboto Mono', monospace;
+            text-decoration: none;
+        }
+        
+        .box-item.is-delivered .box-item-details {
+            text-decoration: line-through;
+        }
+        
+        .box-item-id {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--md-sys-color-on-surface);
+        }
+
+        .box-item-list {
+            list-style: disc;
+            margin: 4px 0 0 20px;
+            padding: 0;
+            font-size: 0.85rem;
+            color: var(--md-sys-color-on-surface-variant);
+        }
+
+        /* Loader y Modales */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            background-color: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            color: white;
+            transition: opacity 0.3s ease;
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .overlay md-circular-progress {
+            --md-circular-progress-size: 60px;
+            --md-sys-color-primary: #ffffff;
+        }
+        
+        .overlay p {
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-top: 16px;
+        }
+
+        md-dialog {
+            --md-dialog-container-color: var(--md-sys-color-surface-bright);
+        }
+        
+        #city-selector-dialog md-dialog {
+             --md-dialog-container-color: #111827;
+        }
+        
+        .city-selector-content {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            padding: 24px;
+        }
+
+        .city-selector-content h1 {
+            font-family: 'Titillium Web', sans-serif;
+            font-weight: 900;
+            font-style: italic;
+            font-size: 2.5rem;
+            text-align: center;
+            color: white;
+            margin: 0;
+        }
+        
+        .city-selector-content p {
+            font-size: 1.2rem;
+            text-align: center;
+            color: var(--md-sys-color-surface-variant);
+            margin: 0 0 16px 0;
+        }
+        
+        .city-selector-content md-filled-button {
+            --md-sys-color-primary: #ffffff;
+            --md-sys-color-on-primary: #111827;
+            --md-filled-button-label-text-size: 1.25rem;
+            --md-filled-button-container-height: 60px;
+            width: 300px;
+        }
+
+        /* Menú lateral */
+        md-navigation-drawer {
+            --md-navigation-drawer-container-color: var(--md-sys-color-surface-bright);
+        }
+        
+        .menu-header {
+            font-family: 'Titillium Web', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            padding: 24px 16px 16px 16px;
+        }
+        
+        .menu-subheader {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--md-sys-color-on-surface-variant);
+            padding: 16px 16px 8px 16px;
+        }
+        
+        md-list-item span[slot="start"] {
+            display: flex;
+            align-items: center;
+        }
+
+        .count-badge {
+            font-size: 0.8rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 12px;
+            margin-left: 8px;
+        }
+        .count-badge.pending { background-color: #FFECB3; color: #664E00; }
+        .count-badge.partial { background-color: #FFF9C4; color: #5F4300; }
+        .count-badge.completed { background-color: #C8E6C9; color: #1B5E20; }
+        
+        .menu-footer {
+            padding: 16px;
+            margin-top: auto;
+        }
+        
+        /* Barra de gestión */
+        #delete-controls {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: var(--md-sys-color-surface-container-highest);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            transform: translateY(100%);
+            transition: transform 0.3s ease-in-out;
+            z-index: 50;
+        }
+        
+        #delete-controls.active {
+            transform: translateY(0);
+        }
+        
+        #delete-controls .button-group {
+            flex-shrink: 0;
+            width: auto;
+        }
+        
+        #delete-controls md-filled-tonal-button, 
+        #delete-controls md-filled-button {
+             width: auto;
+        }
+        
+        #delete-controls md-filled-button {
+            --md-sys-color-primary: var(--md-sys-color-error);
+            --md-sys-color-on-primary: var(--md-sys-color-on-error);
+        }
+        
+        /* Feedback de escaneo */
+        #scan-feedback-overlay {
+            color: white;
+            text-align: center;
+        }
+        #scan-feedback-order { font-size: 2rem; font-weight: 700; margin: 0; }
+        #scan-feedback-digits { font-family: 'Titillium Web', sans-serif; font-weight: 900; font-size: 7rem; margin: 0; }
+        #scan-feedback-type { font-size: 1.5rem; font-weight: 500; margin: 0; }
+        #scan-feedback-items {
+             margin-top: 24px;
+             padding: 16px;
+             border-radius: 12px;
+             background-color: rgba(0,0,0,0.2);
+             max-width: 400px;
+        }
+         #scan-feedback-items ul { list-style-type: none; padding: 0; margin: 0; }
+         #scan-feedback-items li { font-size: 1.1rem; }
     </style>
 </head>
-<body class="antialiased pb-24">
-    
-    <div id="city-selector-view" class="fixed inset-0 bg-gray-800 flex flex-col justify-center items-center p-8 text-white z-50">
-        <h1 class="text-4xl font-black italic uppercase tracking-wider mb-4 text-center">ExtremaduraSport</h1>
-        <p class="text-xl text-gray-300 mb-12 text-center">Selecciona una sede para continuar</p>
-        <div class="w-full max-w-sm space-y-4">
-            <button id="caceres-btn" data-city="Cáceres" class="city-btn w-full bg-white text-gray-800 font-bold py-5 px-4 rounded-lg hover:bg-gray-200 transition-all text-2xl shadow-lg transform hover:scale-105">Cáceres</button>
-            <button id="badajoz-btn" data-city="Badajoz" class="city-btn w-full bg-white text-gray-800 font-bold py-5 px-4 rounded-lg hover:bg-gray-200 transition-all text-2xl shadow-lg transform hover:scale-105">Badajoz</button>
-        </div>
+<body>
+
+    <div id="city-selector-dialog-container">
+        <md-dialog id="city-selector-dialog" open modal>
+            <div class="city-selector-content">
+                <h1>ExtremaduraSport</h1>
+                <p>Selecciona una sede para continuar</p>
+                <md-filled-button id="caceres-btn" data-city="Cáceres">Cáceres</md-filled-button>
+                <md-filled-button id="badajoz-btn" data-city="Badajoz">Badajoz</md-filled-button>
+            </div>
+        </md-dialog>
     </div>
 
-    <div id="side-menu-container" style="display: none;">
-        <div id="menu-overlay" class="fixed inset-0 bg-black bg-opacity-60 z-50 hidden"></div>
-        <div id="side-menu" class="fixed top-0 left-0 h-full w-80 bg-white shadow-xl z-50 transform -translate-x-full">
-            <div class="p-6 flex flex-col h-full">
-                <h2 class="text-2xl font-bold text-gray-800 mb-6">Menú</h2>
-                <nav class="mb-8">
-                    <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Vistas</h3>
-                    <div class="space-y-1">
-                        <a href="#" id="nav-checklist" data-view="checklist" class="nav-link flex items-center p-3 rounded-lg text-gray-700 hover:bg-gray-100 active">Recepción</a>
-                        <a href="#" id="nav-scanner" data-view="scanner" class="nav-link flex items-center p-3 rounded-lg text-gray-700 hover:bg-gray-100">Escáner de Cajas</a>
-                    </div>
-                </nav>
-                 <nav class="mb-8">
-                    <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Filtros de Estado</h3>
-                    <div class="space-y-1" id="status-filters">
-                         <a href="#" data-filter="pending" class="nav-link flex items-center justify-between p-3 rounded-lg text-gray-700 hover:bg-gray-100 active"><span>Pendientes</span><span id="pending-count" class="ml-2 text-sm px-2 py-1 rounded-full bg-orange-200 text-orange-800">0</span></a>
-                         <a href="#" data-filter="partial" class="nav-link flex items-center justify-between p-3 rounded-lg text-gray-700 hover:bg-gray-100"><span>Parcialmente Recibido</span><span id="partial-count" class="ml-2 text-sm px-2 py-1 rounded-full bg-yellow-200 text-yellow-800">0</span></a>
-                         <a href="#" data-filter="completed" class="nav-link flex items-center justify-between p-3 rounded-lg text-gray-700 hover:bg-gray-100"><span>Completados</span><span id="completed-count" class="ml-2 text-sm px-2 py-1 rounded-full bg-green-200 text-green-800">0</span></a>
-                    </div>
-                </nav>
-                <div class="mt-auto">
-                    <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Configuración</h3>
-                    <button id="change-city-button" class="w-full bg-gray-200 text-gray-800 font-bold py-3 px-4 rounded-lg hover:bg-gray-300 transition-all text-lg">Cambiar Sede</button>
+    <div id="app-wrapper" class="main-layout" style="display: none;">
+
+        <md-navigation-drawer type="modal" id="side-menu">
+            <h2 class="menu-header">Menú</h2>
+            <md-list>
+                <div class="menu-subheader">Vistas</div>
+                <md-list-item id="nav-checklist" data-view="checklist" headline="Recepción" class="nav-link" active>
+                    <span slot="start" class="material-icons">inventory_2</span>
+                </md-list-item>
+                <md-list-item id="nav-scanner" data-view="scanner" headline="Escáner de Cajas" class="nav-link">
+                    <span slot="start" class="material-icons">qr_code_scanner</span>
+                </md-list-item>
+                
+                <md-divider></md-divider>
+                
+                <div class="menu-subheader">Filtros de Estado</div>
+                <div id="status-filters">
+                    <md-list-item data-filter="pending" class="nav-link filter-link" active>
+                        <span>Pendientes</span>
+                        <span slot="end" id="pending-count" class="count-badge pending">0</span>
+                    </md-list-item>
+                    <md-list-item data-filter="partial" class="nav-link filter-link">
+                        <span>Parcialmente Recibido</span>
+                        <span slot="end" id="partial-count" class="count-badge partial">0</span>
+                    </md-list-item>
+                    <md-list-item data-filter="completed" class="nav-link filter-link">
+                        <span>Completados</span>
+                        <span slot="end" id="completed-count" class="count-badge completed">0</span>
+                    </md-list-item>
                 </div>
+            </md-list>
+            
+            <div class="menu-footer">
+                <md-outlined-button id="change-city-button">
+                    Cambiar Sede
+                    <span slot="icon" class="material-icons">location_city</span>
+                </md-outlined-button>
             </div>
-            <button id="close-menu-button" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
-        </div>
-    </div>
-    
-    <div id="app-wrapper" style="display: none;">
-        <header class="bg-white shadow-md sticky top-0 z-40">
-            <div class="container mx-auto px-4 sm:px-6 py-3 flex justify-between items-center">
-                 <button id="open-menu-button" class="p-2 -ml-2 text-gray-600 hover:text-gray-900"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button>
-                 <div class="text-center">
-                     <h1 class="text-2xl font-black italic text-gray-900 uppercase tracking-wider">ExtremaduraSport</h1>
-                     <p id="city-display" class="text-sm font-semibold text-gray-500 uppercase tracking-widest"></p>
-                 </div>
-                 <div class="flex items-center gap-4">
-                     <span id="app-version" class="text-xs font-bold text-gray-400 hidden sm:block"></span>
-                     <div class="relative">
-                         <button id="notification-bell" class="relative p-2 text-gray-600 hover:text-gray-900">
-                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-                             <span id="notification-badge" class="absolute top-0 right-0 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center" style="display: none;">0</span>
-                          </button>
-                         <div id="notification-panel" class="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl p-4 z-50 hidden">
-                             <div class="flex justify-between items-center mb-2">
-                                 <h3 class="font-bold text-lg">Notificaciones</h3>
-                                 <button id="clear-notifications-btn" class="text-sm text-red-500 hover:underline">Limpiar Todo</button>
-                             </div>
-                             <div id="notification-list" class="max-h-64 overflow-y-auto"></div>
-                         </div>
-                     </div>
-                 </div>
-            </div>
-        </header>
+        </md-navigation-drawer>
 
-        <main id="main-content" class="container mx-auto p-4 md:p-6 pb-20">
+        <md-top-app-bar>
+            <md-icon-button id="open-menu-button" slot="navigationIcon">
+                <span class="material-icons">menu</span>
+            </md-icon-button>
+            <div slot="headline" class="app-title">ExtremaduraSport</div>
+            <div id="city-display" class="app-subtitle"></div>
+            
+            <md-icon-button id="notification-bell" slot="actionItems" style="position: relative;">
+                <span class="material-icons">notifications</span>
+                <md-badge id="notification-badge" style="display: none;"></md-badge>
+            </md-icon-button>
+            
+            <md-menu id="notification-panel" anchor="notification-bell">
+                 <div style="padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; min-width: 300px;">
+                    <h3 style="margin: 0; font-size: 1.1rem;">Notificaciones</h3>
+                    <md-text-button id="clear-notifications-btn">Limpiar</md-text-button>
+                 </div>
+                 <md-divider></md-divider>
+                 <div id="notification-list" style="max-height: 300px; overflow-y: auto;">
+                    </div>
+            </md-menu>
+        </md-top-app-bar>
+
+        <main>
             <div id="checklist-view" class="app-view active">
-                 <div class="bg-white p-4 rounded-xl shadow-lg mb-6 border border-gray-200 space-y-4">
-                    
-                     <h3 class="text-lg font-semibold text-gray-700">Buscar Artículo</h3>
-                     <input type="search" id="item-search-input" placeholder="Buscar por código (ej: 8000...) o descripción (ej: WISP SHIRT)..." class="w-full border-2 border-gray-300 p-3 rounded-lg focus:border-black focus:ring-0">
-                    
-                     <div class="border-t border-gray-200 pt-4 space-y-4">
-                         <h3 class="text-lg font-semibold text-gray-700">Buscar Envío</h3>
-                         <input type="search" id="box-search-input" placeholder="Buscar por 4 últ. dígitos de caja (ej: 7000)..." class="w-full border-2 border-gray-300 p-3 rounded-lg focus:border-black focus:ring-0">
-                         <div class="flex flex-col sm:flex-row gap-4">
-                             <input type="date" id="date-filter-input" class="w-full border-2 border-gray-300 p-3 rounded-lg focus:border-black focus:ring-0">
-                             <button id="clear-date-filter" class="w-full sm:w-auto bg-gray-200 text-gray-800 font-bold py-3 px-4 rounded-lg hover:bg-gray-300 transition-all">Limpiar Filtro</button>
-                         </div>
-                     </div>
-                 </div>
-                
-                 <div id="upload-panel" class="bg-white p-6 rounded-xl shadow-lg mb-8 border border-gray-200"><h2 class="text-2xl font-bold text-gray-800 mb-3">Cargar Documentos</h2><input type="file" accept=".pdf" id="file-input" class="hidden" multiple /><button id="upload-button" class="w-full bg-gray-800 text-white font-bold py-3 px-4 rounded-lg hover:bg-black transition-all text-lg flex items-center justify-center shadow-md"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>Cargar PDF(s)</button></div>
-                
-                 <div id="shipment-list-container" class="space-y-6"></div>
+                <div class="view-container">
+                    <div class="filter-card">
+                        <div class="form-group">
+                            <md-outlined-text-field id="item-search-input" label="Buscar Artículo" placeholder="Código (8000...) o descripción (WISP...)" type="search">
+                                <span slot="leading-icon" class="material-icons">search</span>
+                            </md-outlined-text-field>
+                            
+                            <md-outlined-text-field id="box-search-input" label="Buscar Envío por Caja" placeholder="4 últ. dígitos de caja (7000...)" type="search">
+                                <span slot="leading-icon" class="material-icons">search</span>
+                            </md-outlined-text-field>
 
-                 <div id="management-section" class="mt-12 text-center" style="display: none;"><button id="manage-shipments-button" class="bg-transparent text-gray-500 hover:text-black hover:underline font-semibold py-2 px-4 rounded-lg transition-all text-sm">Gestionar Envíos</button></div>
+                            <md-outlined-text-field id="date-filter-input" type="date"></md-outlined-text-field>
+                            
+                            <md-text-button id="clear-date-filter">
+                                Limpiar Filtros
+                                <span slot="icon" class="material-icons">clear_all</span>
+                            </md-text-button>
+                        </div>
+                    </div>
+                    
+                    <div class="upload-card">
+                         <h2 class="card-title">Cargar Documentos</h2>
+                         <input type="file" accept=".pdf" id="file-input" class="hidden" multiple style="display: none;" />
+                         <md-filled-button id="upload-button">
+                             Cargar PDF(s)
+                             <span slot="icon" class="material-icons">upload_file</span>
+                         </md-filled-button>
+                    </div>
+                    
+                    <md-tabs id="status-tabs" @change="">
+                        <md-primary-tab data-filter="pending" active>Pendientes</md-primary-tab>
+                        <md-primary-tab data-filter="partial">Parciales</md-primary-tab>
+                        <md-primary-tab data-filter="completed">Completados</md-primary-tab>
+                    </md-tabs>
+                    
+                    <div id="shipment-list-container" class="shipment-list">
+                        </div>
+
+                    <div id="management-section" style="display: none; margin-top: 24px; text-align: center;">
+                        <md-text-button id="manage-shipments-button">
+                            Gestionar Envíos
+                             <span slot="icon" class="material-icons">delete_sweep</span>
+                        </md-text-button>
+                    </div>
+                </div>
             </div>
 
             <div id="scanner-view" class="app-view">
-                 <div class="bg-white p-6 rounded-xl shadow-lg space-y-6">
-                     <div>
-                         <h2 class="text-3xl font-bold text-gray-800 mb-4">Escáner de Cajas</h2>
-                         <div class="mb-4">
-                             <label for="scanner-input" class="block text-sm font-medium text-gray-700 mb-1">1. Escanear con lector externo:</label>
-                             <div class="flex gap-2">
-                                 <input type="text" id="scanner-input" placeholder="Haz clic aquí y escanea un código..." class="w-full border-2 border-gray-300 p-3 rounded-lg focus:border-black focus:ring-0">
-                                 <button id="scanner-search-btn" class="bg-gray-800 text-white font-bold py-3 px-4 rounded-lg hover:bg-black transition-all">Buscar</button>
-                             </div>
+                <div class="view-container">
+                    <div class="upload-card">
+                         <h2 class="card-title">Escáner de Cajas</h2>
+                         <div class="form-group">
+                            <md-outlined-text-field id="scanner-input" label="1. Escanear con lector externo" placeholder="Haz clic aquí y escanea un código...">
+                            </md-outlined-text-field>
+                            
+                            <md-filled-button id="scanner-search-btn">
+                                Buscar
+                                <span slot="icon" class="material-icons">search</span>
+                            </md-filled-button>
+                            
+                            <md-divider style="margin-top: 16px;"></md-divider>
+                            
+                            <p style="margin: 16px 0 0 0; font-weight: 500;">2. O escanear con la cámara:</p>
+                            <md-filled-tonal-button id="camera-scan-btn">
+                                Activar Cámara
+                                <span slot="icon" class="material-icons">camera_alt</span>
+                            </md-filled-tonal-button>
+                            
+                            <div id="camera-container" class="hidden" style="display: none; border-radius: 12px; overflow: hidden;">
+                                <video id="camera-feed" style="width: 100%; height: auto;"></video>
+                            </div>
                          </div>
-                     </div>
-                     <div class="border-t border-gray-200 pt-6">
-                         <label class="block text-sm font-medium text-gray-700 mb-2">2. O escanear con la cámara:</label>
-                         <div id="camera-scanner-container" class="space-y-4">
-                             <button id="camera-scan-btn" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-all text-lg flex items-center justify-center shadow-md">
-                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
-                                 <span>Activar Cámara</span>
-                             </button>
-                             <div id="camera-container" class="hidden">
-                                 <video id="camera-feed"></video>
-                             </div>
-                         </div>
-                     </div>
-                 </div>
+                    </div>
+                </div>
             </div>
         </main>
     </div>
     
-    <div id="delete-controls" class="fixed bottom-0 left-0 w-full bg-gray-800 text-white p-4 shadow-lg transform translate-y-full transition-transform z-50" style="display: none;">
-        <div class="container mx-auto flex justify-between items-center flex-wrap gap-4">
-            <span id="selection-counter" class="font-bold">0 envíos seleccionados</span>
-            <div class="flex space-x-4">
-                <button id="select-all-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-5 rounded-lg">Seleccionar Todo</button>
-                <button id="delete-selected-button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-5 rounded-lg disabled:bg-gray-500 disabled:cursor-not-allowed" disabled>Eliminar</button>
-                <button id="cancel-delete-button" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-5 rounded-lg">Cancelar</button>
-            </div>
-        </div>
+    <div id="delete-controls">
+         <span id="selection-counter" style="font-weight: 500;">0 seleccionados</span>
+         <div class="button-group">
+            <md-text-button id="cancel-delete-button">Cancelar</md-text-button>
+            <md-filled-tonal-button id="select-all-button">Seleccionar Todo</md-filled-tonal-button>
+            <md-filled-button id="delete-selected-button" disabled>Eliminar</md-filled-button>
+         </div>
     </div>
     
-    <div id="confirm-delete-modal" class="modal-overlay" style="display: none;">
-        <div class="bg-white p-8 rounded-xl shadow-2xl w-11/12 max-w-md text-center">
-            <h2 class="text-2xl font-bold text-gray-800 mb-4">Confirmar Eliminación</h2>
-            <p id="confirm-delete-text" class="text-gray-600 mb-8"></p>
-            <div class="flex justify-center space-x-4">
-                 <button id="cancel-confirm-delete-btn" class="w-full bg-gray-200 text-gray-800 font-bold py-3 px-4 rounded-lg hover:bg-gray-300 transition-all text-lg">Cancelar</button>
-                 <button id="confirm-delete-btn" class="w-full bg-red-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-red-700 transition-all text-lg shadow-md">Sí, eliminar</button>
-            </div>
+    <md-dialog id="confirm-delete-modal">
+        <div slot="headline">Confirmar Eliminación</div>
+        <div slot="content" id="confirm-delete-text">
+            ¿Estás seguro de que quieres eliminar los envíos seleccionados?
         </div>
+        <div slot="actions">
+            <md-text-button id="cancel-confirm-delete-btn" value="cancel">Cancelar</md-text-button>
+            <md-text-button id="confirm-delete-btn" value="delete" style="color: var(--md-sys-color-error);">Sí, eliminar</md-text-button>
+        </div>
+    </md-dialog>
+
+    <div id="loader-overlay" class="overlay">
+        <md-circular-progress indeterminate></md-circular-progress>
+        <p id="loader-text">Cargando...</p>
+    </div>
+    
+    <div id="scan-feedback-overlay" class="overlay feedback-overlay">
+        <p id="scan-feedback-order"></p>
+        <p id="scan-feedback-digits"></p>
+        <p id="scan-feedback-type"></s>
+        <div id="scan-feedback-items"></div>
     </div>
 
-    <div id="loader-overlay" class="loader-overlay" style="display: none;"><div class="loader"></div><p id="loader-text" class="text-white text-lg mt-4 font-semibold"></p></div>
-    <div id="scan-feedback-overlay" class="feedback-overlay pointer-events-none opacity-0 transition-opacity duration-300 text-white flex flex-col justify-center items-center">
-        <p id="scan-feedback-order" class="text-3xl font-bold mb-2"></p>
-        <p id="scan-feedback-digits" class="text-9xl font-black"></p>
-        <p id="scan-feedback-type" class="text-2xl font-semibold mt-2"></p>
-        <div id="scan-feedback-items" class="mt-4 text-lg bg-black bg-opacity-20 p-4 rounded-lg max-w-md w-full">
-        </div>
-    </div>
 
     <script type="module">
         // --- Configuración de Firebase ---
@@ -182,14 +670,14 @@
 
         // Imports de Firebase
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, getDocs, serverTimestamp, setLogLevel, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, doc, updateDoc, deleteDoc, serverTimestamp, setLogLevel, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         
-        // Import de la librería ZXing con la URL CORRECTA
+        // Import de ZXing
         import { BrowserMultiFormatReader, NotFoundException } from "https://cdn.jsdelivr.net/npm/@zxing/library@latest/+esm";
 
         document.addEventListener('DOMContentLoaded', () => {
-            const APP_VERSION = "v7.0"; // Nueva versión
+            const APP_VERSION = "v7.0-MD3";
             let db; let shipmentsCollectionRef; let localShipmentsCache = [];
             let unsubscribeFromShipments; let currentCity = '';
             let isDeleteModeActive = false; let shipmentsToDelete = new Set(); 
@@ -200,17 +688,14 @@
             let codeReader; 
             let isCameraRunning = false;
 
+            // Objeto de elementos de la UI de Material
             const elements = {
-                citySelectorView: document.getElementById('city-selector-view'),
+                citySelectorDialog: document.getElementById('city-selector-dialog'),
                 appWrapper: document.getElementById('app-wrapper'),
-                sideMenuContainer: document.getElementById('side-menu-container'),
-                menuOverlay: document.getElementById('menu-overlay'),
                 sideMenu: document.getElementById('side-menu'),
                 openMenuButton: document.getElementById('open-menu-button'),
-                closeMenuButton: document.getElementById('close-menu-button'),
                 changeCityButton: document.getElementById('change-city-button'),
                 cityDisplay: document.getElementById('city-display'),
-                appVersion: document.getElementById('app-version'),
                 uploadButton: document.getElementById('upload-button'),
                 fileInput: document.getElementById('file-input'),
                 loaderOverlay: document.getElementById('loader-overlay'),
@@ -231,7 +716,9 @@
                 confirmDeleteBtn: document.getElementById('confirm-delete-btn'),
                 cancelConfirmDeleteBtn: document.getElementById('cancel-confirm-delete-btn'),
                 boxSearchInput: document.getElementById('box-search-input'),
-                statusFilters: document.getElementById('status-filters'),
+                itemSearchInput: document.getElementById('item-search-input'),
+                statusTabs: document.getElementById('status-tabs'),
+                statusFilters: document.getElementById('status-filters'), // En el menú
                 notificationBell: document.getElementById('notification-bell'),
                 notificationBadge: document.getElementById('notification-badge'),
                 notificationPanel: document.getElementById('notification-panel'),
@@ -247,18 +734,25 @@
                 scanFeedbackDigits: document.getElementById('scan-feedback-digits'),
                 scanFeedbackOrder: document.getElementById('scan-feedback-order'),
                 scanFeedbackType: document.getElementById('scan-feedback-type'),
+                scanFeedbackItems: document.getElementById('scan-feedback-items'),
                 dateFilterInput: document.getElementById('date-filter-input'),
                 clearDateFilter: document.getElementById('clear-date-filter'),
                 cameraScanBtn: document.getElementById('camera-scan-btn'),
                 cameraContainer: document.getElementById('camera-container'),
-                cameraFeed: document.getElementById('camera-feed'),
-                itemSearchInput: document.getElementById('item-search-input'),
-                scanFeedbackItems: document.getElementById('scan-feedback-items')
+                cameraFeed: document.getElementById('camera-feed')
             };
 
             const toggleLoader = (show, text = '') => {
                 elements.loaderText.textContent = text;
-                elements.loaderOverlay.style.display = show ? 'flex' : 'none';
+                if (show) {
+                    elements.loaderOverlay.classList.add('active');
+                } else {
+                    elements.loaderOverlay.classList.remove('active');
+                }
+            };
+            
+            const toggleMenu = (show) => {
+                elements.sideMenu.open = show;
             };
 
             const applyAllFilters = () => {
@@ -298,13 +792,12 @@
                 }
                 
                 renderAllShipments(filteredShipments);
-                generateAndRenderNotifications(localShipmentsCache); // Notificaciones siempre sobre el total
+                generateAndRenderNotifications(localShipmentsCache);
             };
 
             const renderAllShipments = (shipments) => {
                 if(!elements.pendingCount) return;
                 
-                // Los contadores siempre usan la caché completa, no los filtros de búsqueda
                 const pendingTotal = localShipmentsCache.filter(s => initialClassifications.get(s.firestoreId) === 'pending').length;
                 const partialTotal = localShipmentsCache.filter(s => initialClassifications.get(s.firestoreId) === 'partial').length;
                 const completedTotal = localShipmentsCache.filter(s => initialClassifications.get(s.firestoreId) === 'completed').length;
@@ -313,7 +806,6 @@
                 elements.partialCount.textContent = partialTotal;
                 elements.completedCount.textContent = completedTotal;
 
-                // Los envíos a renderizar SÍ usan la lista filtrada
                 const pendingShipments = shipments.filter(s => initialClassifications.get(s.firestoreId) === 'pending');
                 const partialShipments = shipments.filter(s => initialClassifications.get(s.firestoreId) === 'partial');
                 const completedShipments = shipments.filter(s => initialClassifications.get(s.firestoreId) === 'completed');
@@ -330,12 +822,21 @@
                 elements.managementSection.style.display = localShipmentsCache.length > 0 ? 'block' : 'none';
             };
             
+            // *** FUNCIÓN CLAVE REESCRITA PARA MATERIAL ***
             const renderShipmentList = (shipmentList, container, emptyText) => {
                 if(!container) return;
                 container.innerHTML = '';
+                
                 if (shipmentList.length === 0) {
-                    container.innerHTML = `<p class="text-center text-gray-500 py-8 text-xl">${emptyText}</p>`; return;
+                    const p = document.createElement('p');
+                    p.textContent = emptyText;
+                    p.style.textAlign = 'center';
+                    p.style.color = 'var(--md-sys-color-on-surface-variant)';
+                    p.style.padding = '32px 0';
+                    container.appendChild(p);
+                    return;
                 }
+
                 const groupedByDate = shipmentList.reduce((acc, shipment) => {
                     const date = shipment.shippingDate || 'Sin Fecha';
                     if (!acc[date]) { acc[date] = []; }
@@ -351,7 +852,7 @@
 
                 sortedDates.forEach(date => {
                     const dateHeader = document.createElement('h2');
-                    dateHeader.className = "text-xl font-bold text-gray-700 pb-2 mb-4 border-b-2 border-gray-300";
+                    dateHeader.className = "date-header";
                     dateHeader.textContent = date;
                     container.appendChild(dateHeader);
 
@@ -366,61 +867,139 @@
                         const isCompleted = allBoxes.length > 0 && deliveredBoxesCount === allBoxes.length;
                         const isSelected = shipmentsToDelete.has(shipment.firestoreId);
                         
-                        let cardClasses = 'border-gray-200';
-                        if (isOverdue && !isCompleted && initialClassifications.get(shipment.firestoreId) === 'partial') cardClasses = 'border-red-500 bg-red-50';
-                        if (isSelected) cardClasses = 'border-blue-500 bg-blue-50';
-                        
-                        const progressText = `${deliveredBoxesCount} / ${allBoxes.length}`;
+                        // 1. Crear Card
                         const shipmentCard = document.createElement('div');
-                        shipmentCard.className = `p-4 sm:p-6 rounded-xl shadow-lg border-l-4 transition-all ${cardClasses} flex items-start space-x-4`;
+                        shipmentCard.className = 'shipment-card';
+                        if (isSelected) shipmentCard.classList.add('is-selected');
+                        if (isOverdue && !isCompleted && initialClassifications.get(shipment.firestoreId) === 'partial') {
+                            shipmentCard.classList.add('is-overdue');
+                        }
+
+                        // 2. Checkbox de borrado (si aplica)
+                        if (isDeleteModeActive) {
+                            const checkbox = document.createElement('md-checkbox');
+                            checkbox.className = 'shipment-select-checkbox';
+                            checkbox.dataset.firestoreId = shipment.firestoreId;
+                            checkbox.checked = isSelected;
+                            checkbox.style.padding = '16px 0 16px 16px';
+                            shipmentCard.appendChild(checkbox);
+                        }
+                        
+                        // 3. Contenido de la Card
+                        const content = document.createElement('div');
+                        content.className = 'shipment-card-content';
+                        
+                        // 3a. Header de la Card
+                        const header = document.createElement('div');
+                        header.className = 'shipment-card-header';
+                        
+                        const headerInfo = document.createElement('div');
+                        const title = document.createElement('h3');
+                        title.className = 'shipment-card-title';
+                        title.textContent = shipment.orderDescription || 'Sin Descripción';
+                        headerInfo.appendChild(title);
+                        
+                        const subtitle = document.createElement('p');
+                        subtitle.className = 'shipment-card-subtitle';
+                        subtitle.textContent = `Shipping Order: ${shipment.id} | Fecha: ${shipment.shippingDate}`;
+                        headerInfo.appendChild(subtitle);
+                        
+                        const filename = document.createElement('p');
+                        filename.className = 'shipment-card-filename';
+                        filename.textContent = shipment.fileName;
+                        headerInfo.appendChild(filename);
+                        header.appendChild(headerInfo);
+                        
+                        // 3b. Tags
+                        const tags = document.createElement('div');
+                        tags.className = 'shipment-card-tags';
+                        
+                        const progressChip = document.createElement('span');
+                        progressChip.className = `chip ${isCompleted ? 'chip-completed' : 'chip-progress'}`;
+                        progressChip.textContent = isCompleted ? 'Completado' : `Progreso: ${deliveredBoxesCount} / ${allBoxes.length}`;
+                        tags.appendChild(progressChip);
+                        
+                        const typeChip = document.createElement('span');
                         const type = shipment.type || 'B2B';
-                        const typeLabel = type === 'Pack' ? `<span class="text-xs font-bold px-2 py-1 rounded-full bg-blue-200 text-blue-800">Pack</span>` : `<span class="text-xs font-bold px-2 py-1 rounded-full bg-green-200 text-green-800">B2B</span>`;
+                        typeChip.className = `chip ${type === 'Pack' ? 'chip-type-pack' : 'chip-type-b2b'}`;
+                        typeChip.textContent = type;
+                        tags.appendChild(typeChip);
+                        header.appendChild(tags);
                         
-                        shipmentCard.innerHTML = `
-                            ${isDeleteModeActive ? `<input type="checkbox" class="shipment-select-checkbox h-6 w-6 rounded border-gray-400 text-gray-800 focus:ring-gray-500 cursor-pointer mt-1" data-firestore-id="${shipment.firestoreId}" ${isSelected ? 'checked' : ''}>` : ''}
-                            <div class="flex-grow">
-                                <div class="border-b border-gray-200 pb-3 mb-3">
-                                    <div class="flex justify-between items-start">
-                                        <div>
-                                            <h3 class="text-xl font-bold text-gray-900">${shipment.orderDescription || 'Sin Descripción'}</h3>
-                                            <p class="text-sm text-gray-500">Shipping Order: ${shipment.id} | Fecha: ${shipment.shippingDate}</p>
-                                            <p class="text-sm text-gray-400 italic">${shipment.fileName}</p>
-                                        </div>
-                                        <div class="text-right space-y-2">
-                                            <div class="font-bold text-sm px-3 py-1 rounded-full ${isCompleted ? 'bg-green-200 text-green-800' : `bg-yellow-200 text-yellow-800`}">${isCompleted ? 'Completado' : `Progreso: ${progressText}`}</div>
-                                            <div>${typeLabel}</div>
-                                        </div>
-                                    </div>
-                                    ${isOverdue && !isCompleted && initialClassifications.get(shipment.firestoreId) === 'partial' ? '<p class="text-sm font-bold text-red-600 mt-2">Este pedido lleva más de 7 días sin actualizarse.</p>' : ''}
-                                </div>
-                                <div class="space-y-2 box-list"></div>
-                            </div>`;
+                        content.appendChild(header);
                         
-                        const boxListContainer = shipmentCard.querySelector('.box-list');
+                        // 3c. Texto Overdue
+                        if (isOverdue && !isCompleted && initialClassifications.get(shipment.firestoreId) === 'partial') {
+                            const overdueText = document.createElement('p');
+                            overdueText.className = 'overdue-text';
+                            overdueText.textContent = 'Este pedido lleva más de 7 días sin actualizarse.';
+                            content.appendChild(overdueText);
+                        }
+
+                        // 3d. Lista de Cajas
+                        const boxListContainer = document.createElement('div');
+                        boxListContainer.className = 'box-list';
                         
                         allBoxes.forEach(box => {
-                            const itemsHtml = (box.items || []).map(item => 
-                                `<li class="text-sm text-gray-600 ml-4">${item.qty} x ${item.desc} (${item.size}) [${item.code}]</li>`
-                            ).join('');
-
-                            const label = document.createElement('label');
-                            label.className = `flex items-start p-3 rounded-lg transition-all duration-300 ${isDeleteModeActive ? 'cursor-default' : 'cursor-pointer hover:bg-gray-50'} ${box.delivered ? 'bg-gray-100 text-gray-500' : 'bg-white'}`;
+                            const boxItem = document.createElement('div');
+                            boxItem.className = 'box-item';
+                            if (box.delivered) boxItem.classList.add('is-delivered');
+                            if (isDeleteModeActive) boxItem.classList.add('is-delete-mode');
                             
-                            label.innerHTML = `
-                                <input type="checkbox" ${box.delivered ? 'checked' : ''} class="h-6 w-6 rounded border-gray-400 text-gray-800 focus:ring-gray-500 mt-1 ${isDeleteModeActive ? 'cursor-not-allowed' : 'cursor-pointer'}" data-firestore-id="${shipment.firestoreId}" data-box-id="${box.id}" ${isDeleteModeActive ? 'disabled' : ''}>
-                                <div class="ml-4 flex-grow ${box.delivered ? 'line-through' : ''}">
-                                    <p class="font-bold text-lg font-mono">${box.id}</p>
-                                    <ul class="list-disc list-inside mt-1 ${box.delivered ? 'text-gray-400' : ''}">
-                                        ${itemsHtml.length > 0 ? itemsHtml : '<li class="text-sm text-gray-400 ml-4">No hay información de artículos para esta caja.</li>'}
-                                    </ul>
-                                </div>
-                            `;
-                            boxListContainer.appendChild(label);
+                            const boxCheckbox = document.createElement('md-checkbox');
+                            boxCheckbox.checked = box.delivered;
+                            boxCheckbox.dataset.firestoreId = shipment.firestoreId;
+                            boxCheckbox.dataset.boxId = box.id;
+                            if (isDeleteModeActive) boxCheckbox.disabled = true;
+                            
+                            const boxDetails = document.createElement('div');
+                            boxDetails.className = 'box-item-details';
+                            
+                            const boxId = document.createElement('span');
+                            boxId.className = 'box-item-id';
+                            boxId.textContent = box.id;
+                            boxDetails.appendChild(boxId);
+                            
+                            const itemsUl = document.createElement('ul');
+                            itemsUl.className = 'box-item-list';
+                            if ((box.items || []).length > 0) {
+                                box.items.forEach(item => {
+                                    const li = document.createElement('li');
+                                    li.textContent = `${item.qty} x ${item.desc} (${item.size}) [${item.code}]`;
+                                    itemsUl.appendChild(li);
+                                });
+                            } else {
+                                const li = document.createElement('li');
+                                li.textContent = 'No hay información de artículos para esta caja.';
+                                li.style.color = 'var(--md-sys-color-outline)';
+                                itemsUl.appendChild(li);
+                            }
+                            boxDetails.appendChild(itemsUl);
+                            
+                            boxItem.appendChild(boxCheckbox);
+                            boxItem.appendChild(boxDetails);
+                            
+                            // Event listener para marcar/desmarcar
+                            boxItem.addEventListener('click', (e) => {
+                                if (isDeleteModeActive) return;
+                                if (e.target.tagName !== 'MD-CHECKBOX') {
+                                    boxCheckbox.checked = !boxCheckbox.checked;
+                                    // Disparar evento de cambio manualmente
+                                    boxCheckbox.dispatchEvent(new Event('change', { bubbles: true }));
+                                }
+                            });
+                            
+                            boxListContainer.appendChild(boxItem);
                         });
+                        
+                        content.appendChild(boxListContainer);
+                        shipmentCard.appendChild(content);
                         container.appendChild(shipmentCard);
                     });
                 });
             };
+            
+            // --- Lógica de la App (casi sin cambios) ---
 
             const extractDataFromPdf = async (file) => {
                 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
@@ -434,7 +1013,6 @@
                 }
                 
                 const fullText = rawTextItems.join('\n');
-
                 const orderIdRegex = /Shipping Order\s*([A-Z0-9]+)/i;
                 const dateRegex = /Shipping date\n(\d{1,2}\/\d{1,2}\/\d{4})/;
                 const descRegex = /Order Description\s*([A-Z0-9-]+)/i;
@@ -456,7 +1034,6 @@
                 if (recapStartIndex > -1) {
                     const recapText = fullText.substring(recapStartIndex);
                     const lines = recapText.split('\n');
-                    
                     const itemRegex = /^([A-Z0-9]{10,12})\s+(.*?)\s+([A-Z0-9/]{1,5})\s+(\d+)\s+(ND\d{10})$/;
                     
                     for (const line of lines) {
@@ -477,11 +1054,7 @@
                 for (const item of items) {
                     const { boxId, ...itemData } = item;
                     if (!boxesMap.has(boxId)) {
-                        boxesMap.set(boxId, {
-                            id: boxId,
-                            delivered: false,
-                            items: []
-                        });
+                        boxesMap.set(boxId, { id: boxId, delivered: false, items: [] });
                     }
                     boxesMap.get(boxId).items.push(itemData);
                 }
@@ -493,17 +1066,12 @@
                     const uniqueBoxIds = boxIdMatches ? [...new Set(boxIdMatches)] : [];
                     uniqueBoxIds.forEach(boxId => {
                         if (!boxesMap.has(boxId)) {
-                            boxesMap.set(boxId, {
-                                id: boxId,
-                                delivered: false,
-                                items: []
-                            });
+                            boxesMap.set(boxId, { id: boxId, delivered: false, items: [] });
                         }
                     });
                 }
                 
                 const boxes = Array.from(boxesMap.values());
-                
                 return { shippingOrderId, shippingDate, boxes, orderDescription, fileName: file.name, type };
             };
 
@@ -555,29 +1123,32 @@
                      if (shipment.createdAt && typeof shipment.createdAt.toDate === 'function' && shipment.createdAt.toDate().getTime() < sevenDaysAgo) {
                          (shipment.boxes || []).forEach(box => {
                              if (!box.delivered) {
-                                 notifications.push(`¡Atención! La caja ${box.id} del pedido ${shipment.orderDescription} lleva más de 7 días sin recibirse.`);
+                                 notifications.push({
+                                     id: box.id,
+                                     text: `¡Atención! La caja ${box.id.slice(-7)} del pedido ${shipment.orderDescription} lleva más de 7 días sin recibirse.`
+                                 });
                              }
                          });
                      }
                  });
                  
-                 const uniqueNotifications = [...new Set(notifications)];
+                 const uniqueNotifications = Array.from(new Map(notifications.map(n => [n.id, n])).values());
 
                  if (uniqueNotifications.length > 0) {
-                     elements.notificationBadge.textContent = uniqueNotifications.length;
-                     elements.notificationBadge.style.display = 'flex';
+                     elements.notificationBadge.value = uniqueNotifications.length;
+                     elements.notificationBadge.style.display = 'block';
                  } else {
                      elements.notificationBadge.style.display = 'none';
                  }
 
                  elements.notificationList.innerHTML = uniqueNotifications.length > 0 
-                     ? uniqueNotifications.map(n => `<div class="p-2 border-b border-gray-200 text-sm">${n}</div>`).join('')
-                     : '<p class="text-gray-500 text-center p-4">No hay notificaciones</p>';
+                     ? uniqueNotifications.map(n => `<md-list-item headline="${n.text}" style="white-space: normal;"></md-list-item>`).join('')
+                     : '<md-list-item headline="No hay notificaciones"></md-list-item>';
              };
 
             const handleCheckChange = async (event) => {
                  const target = event.target;
-                 if (target.type === 'checkbox' && target.dataset.boxId && !isDeleteModeActive) {
+                 if (target.tagName === 'MD-CHECKBOX' && target.dataset.boxId && !isDeleteModeActive) {
                      const { firestoreId, boxId } = target.dataset;
                      const shipmentInCache = localShipmentsCache.find(s => s.firestoreId === firestoreId);
                      
@@ -594,7 +1165,6 @@
 
             const showScanFeedback = (bgColor, shipment, typeText, boxId = '') => {
                 elements.scanFeedbackOverlay.style.backgroundColor = bgColor;
-                
                 let itemsHtml = '<p>No hay información de artículos.</p>';
                 
                 if (shipment) {
@@ -604,7 +1174,7 @@
                     const scannedBox = (shipment.boxes || []).find(b => b.id.slice(-7) === boxId.slice(-7));
                     if (scannedBox && scannedBox.items && scannedBox.items.length > 0) {
                         itemsHtml = '<ul>' + scannedBox.items.map(item => 
-                            `<li class="text-base font-medium">${item.qty} x ${item.desc} (${item.size})</li>`
+                            `<li>${item.qty} x ${item.desc} (${item.size})</li>`
                         ).join('') + '</ul>';
                     }
                 } else {
@@ -615,9 +1185,9 @@
                 elements.scanFeedbackType.textContent = typeText;
                 elements.scanFeedbackItems.innerHTML = itemsHtml;
 
-                elements.scanFeedbackOverlay.classList.remove('opacity-0');
+                elements.scanFeedbackOverlay.classList.add('active');
                 setTimeout(() => {
-                    elements.scanFeedbackOverlay.classList.add('opacity-0');
+                    elements.scanFeedbackOverlay.classList.remove('active');
                     elements.scannerInput.focus();
                 }, 2500);
             };
@@ -643,7 +1213,7 @@
 
                 if (foundShipment && foundBox) {
                     if (foundBox.delivered) {
-                        showScanFeedback('#eab308', foundShipment, 'CAJA YA RECIBIDA', foundBox.id);
+                        showScanFeedback('#eab308', foundShipment, 'CAJA YA RECIBIDA', foundBox.id); // Amarillo
                     } else {
                         const docRef = doc(db, shipmentsCollectionRef.path, foundShipment.firestoreId);
                         const updatedBoxes = foundShipment.boxes.map(b =>
@@ -655,7 +1225,7 @@
                         showScanFeedback(typeInfo.color, foundShipment, typeInfo.label, foundBox.id);
                     }
                 } else {
-                    showScanFeedback('#ef4444', null, 'CAJA NO ENCONTRADA', barcode);
+                    showScanFeedback('#ef4444', null, 'CAJA NO ENCONTRADA', barcode); // Rojo
                 }
             };
 
@@ -663,8 +1233,9 @@
                 if (codeReader) {
                     codeReader.reset();
                 }
-                elements.cameraContainer.classList.add('hidden');
+                elements.cameraContainer.style.display = 'none';
                 elements.cameraScanBtn.querySelector('span').textContent = 'Activar Cámara';
+                elements.cameraScanBtn.icon = 'camera_alt';
                 isCameraRunning = false;
             };
 
@@ -672,11 +1243,11 @@
                 if (!codeReader) {
                     codeReader = new BrowserMultiFormatReader();
                 }
-
                 try {
                     isCameraRunning = true;
-                    elements.cameraContainer.classList.remove('hidden');
+                    elements.cameraContainer.style.display = 'block';
                     elements.cameraScanBtn.querySelector('span').textContent = 'Escaneando... (Cancelar)';
+                    elements.cameraScanBtn.icon = 'stop_circle';
                     
                     const result = await codeReader.decodeOnceFromVideoDevice(undefined, 'camera-feed');
                     
@@ -695,29 +1266,41 @@
             };
             
             const switchView = (view) => {
-                if (isCameraRunning) {
-                    stopCamera();
-                }
+                if (isCameraRunning) stopCamera();
+                
                 document.querySelectorAll('.app-view').forEach(v => v.classList.remove('active'));
-                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
                 document.getElementById(`${view}-view`).classList.add('active');
-                document.getElementById(`nav-${view}`).classList.add('active');
+                
+                // Sincronizar nav links del menú
+                document.querySelectorAll('#side-menu .nav-link').forEach(l => l.active = false);
+                document.getElementById(`nav-${view}`).active = true;
+                
+                // Sincronizar tabs de la vista principal (si es checklist)
+                if (view === 'checklist') {
+                    elements.statusTabs.style.display = 'flex';
+                } else {
+                    elements.statusTabs.style.display = 'none';
+                }
             };
             
             const toggleDeleteMode = (enable) => {
-                isDeleteModeActive = enable; shipmentsToDelete.clear();
+                isDeleteModeActive = enable; 
+                shipmentsToDelete.clear();
+                
                 if (enable) {
-                    elements.deleteControls.style.display = 'block'; setTimeout(() => { elements.deleteControls.classList.remove('translate-y-full'); }, 10);
+                    elements.deleteControls.classList.add('active');
                 } else {
-                    elements.deleteControls.classList.add('translate-y-full'); setTimeout(() => { elements.deleteControls.style.display = 'none'; }, 300);
+                    elements.deleteControls.classList.remove('active');
                 }
-                updateDeleteControls(); updateAllViews(localShipmentsCache);
+                updateDeleteControls(); 
+                updateAllViews(localShipmentsCache);
             };
 
             const updateDeleteControls = () => {
                 const count = shipmentsToDelete.size;
                 elements.selectionCounter.textContent = `${count} envío(s) seleccionado(s)`;
                 elements.deleteSelectedButton.disabled = count === 0;
+                
                 const allVisibleShipments = getVisibleShipmentIds();
                 const allSelected = allVisibleShipments.length > 0 && allVisibleShipments.every(id => shipmentsToDelete.has(id));
                 elements.selectAllButton.textContent = allSelected ? 'Deseleccionar Todo' : 'Seleccionar Todo';
@@ -728,7 +1311,8 @@
                 if (isDeleteModeActive && target.classList.contains('shipment-select-checkbox')) {
                     const { firestoreId } = target.dataset;
                     if (target.checked) shipmentsToDelete.add(firestoreId); else shipmentsToDelete.delete(firestoreId);
-                    updateDeleteControls(); updateAllViews(localShipmentsCache);
+                    updateDeleteControls(); 
+                    updateAllViews(localShipmentsCache); // Re-renderizar para mostrar selección
                 }
             };
 
@@ -753,20 +1337,23 @@
             };
 
             const handleDeleteSelected = () => {
-                const count = shipmentsToDelete.size; if (count === 0) return;
+                const count = shipmentsToDelete.size; 
+                if (count === 0) return;
                 elements.confirmDeleteText.textContent = `¿Estás seguro de que quieres eliminar los ${count} envíos seleccionados? Esta acción no se puede deshacer.`;
-                elements.confirmDeleteModal.style.display = 'flex';
+                elements.confirmDeleteModal.open = true;
             };
 
             const executeDelete = async () => {
                 toggleLoader(true, `Eliminando ${shipmentsToDelete.size} envío(s)...`);
                 const batch = writeBatch(db);
                 shipmentsToDelete.forEach(id => {
-                    const docRef = doc(db, shipmentsCollectionRef.path, id); batch.delete(docRef);
+                    const docRef = doc(db, shipmentsCollectionRef.path, id); 
+                    batch.delete(docRef);
                 });
                 await batch.commit();
-                toggleLoader(false); toggleDeleteMode(false);
-                elements.confirmDeleteModal.style.display = 'none';
+                toggleLoader(false); 
+                toggleDeleteMode(false);
+                elements.confirmDeleteModal.open = false;
             };
 
             const connectToFirebase = async (city) => {
@@ -774,9 +1361,8 @@
                 currentCity = city;
                 localStorage.setItem('extremaduraSportSelectedCity', city);
                 elements.cityDisplay.textContent = city;
-                elements.citySelectorView.style.display = 'none';
-                elements.appWrapper.style.display = 'block';
-                elements.sideMenuContainer.style.display = 'block';
+                elements.citySelectorDialog.open = false;
+                elements.appWrapper.style.display = 'flex';
                 
                 try {
                     let app;
@@ -789,14 +1375,8 @@
                     const auth = getAuth(app);
                     setLogLevel('error');
                     
-                    if (!auth.currentUser) {
-                        await signInAnonymously(auth);
-                    }
-                    
-                    if (unsubscribeFromShipments) { 
-                        unsubscribeFromShipments(); 
-                        unsubscribeFromShipments = null; 
-                    }
+                    if (!auth.currentUser) await signInAnonymously(auth);
+                    if (unsubscribeFromShipments) unsubscribeFromShipments(); 
                     
                     const collectionPath = `projects/${projectId}/data/${city.toLowerCase()}/shipments`;
                     shipmentsCollectionRef = collection(db, collectionPath);
@@ -808,11 +1388,8 @@
                             const totalBoxes = (s.boxes || []).length;
                             const deliveredBoxes = (s.boxes || []).filter(b => b.delivered).length;
                             let status = 'pending';
-                            if (deliveredBoxes === totalBoxes && totalBoxes > 0) {
-                                status = 'completed';
-                            } else if (deliveredBoxes > 0) {
-                                status = 'partial';
-                            }
+                            if (deliveredBoxes === totalBoxes && totalBoxes > 0) status = 'completed';
+                            else if (deliveredBoxes > 0) status = 'partial';
                             initialClassifications.set(s.firestoreId, status);
                         });
 
@@ -830,75 +1407,72 @@
                 }
             };
             
-            const toggleMenu = (show) => {
-                if (show) {
-                    elements.menuOverlay.classList.remove('hidden');
-                    elements.sideMenu.classList.remove('-translate-x-full');
-                    elements.menuOverlay.style.opacity = 1;
-                } else {
-                    elements.menuOverlay.style.opacity = 0;
-                    elements.sideMenu.classList.add('-translate-x-full');
-                    setTimeout(() => elements.menuOverlay.classList.add('hidden'), 300);
-                }
-            };
+            // --- Función Principal (Event Listeners) ---
             
             const main = () => {
-                elements.appVersion.textContent = APP_VERSION;
+                // No mostrar la app hasta que se seleccione ciudad
                 const savedCity = localStorage.getItem('extremaduraSportSelectedCity');
                 if (savedCity) {
                     connectToFirebase(savedCity);
                 } else {
-                    elements.citySelectorView.style.display = 'flex';
+                    elements.citySelectorDialog.open = true;
                     elements.appWrapper.style.display = 'none';
-                    elements.sideMenuContainer.style.display = 'none';
                 }
                 
-                elements.openMenuButton.addEventListener('click', () => toggleMenu(true));
-                elements.closeMenuButton.addEventListener('click', () => toggleMenu(false));
-                elements.menuOverlay.addEventListener('click', () => toggleMenu(false));
-                
-                document.querySelectorAll('.city-btn').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        connectToFirebase(btn.dataset.city);
-                    });
-                });
+                // Listeners de Selección de Ciudad
+                document.getElementById('caceres-btn').addEventListener('click', () => connectToFirebase('Cáceres'));
+                document.getElementById('badajoz-btn').addEventListener('click', () => connectToFirebase('Badajoz'));
 
+                // Listeners del Menú
+                elements.openMenuButton.addEventListener('click', () => toggleMenu(true));
                 elements.changeCityButton.addEventListener('click', () => {
                     localStorage.removeItem('extremaduraSportSelectedCity');
                     location.reload();
                 });
+
+                // Listeners de Vistas y Filtros
+                elements.navChecklist.addEventListener('click', (e) => { switchView('checklist'); toggleMenu(false); });
+                elements.navScanner.addEventListener('click', (e) => { switchView('scanner'); toggleMenu(false); });
                 
+                elements.statusFilters.addEventListener('click', (e) => {
+                     const link = e.target.closest('md-list-item');
+                     if(link && link.dataset.filter){
+                        currentStatusFilter = link.dataset.filter;
+                        // Sincronizar Tabs con Menú
+                        elements.statusTabs.activeTabIndex = Array.from(elements.statusTabs.tabs).findIndex(t => t.dataset.filter === currentStatusFilter);
+                        elements.statusFilters.querySelectorAll('.filter-link').forEach(a => a.active = false);
+                        link.active = true;
+                        
+                        if (elements.scannerView.classList.contains('active')) switchView('checklist');
+                        updateAllViews(localShipmentsCache);
+                        toggleMenu(false);
+                     }
+                });
+                
+                elements.statusTabs.addEventListener('change', (e) => {
+                    currentStatusFilter = e.target.activeTab.dataset.filter;
+                    // Sincronizar Menú con Tabs
+                    elements.statusFilters.querySelectorAll('.filter-link').forEach(a => a.active = (a.dataset.filter === currentStatusFilter));
+                    updateAllViews(localShipmentsCache);
+                });
+
+                // Listeners de Carga de Archivos
                 elements.uploadButton.addEventListener('click', () => elements.fileInput.click());
                 elements.fileInput.addEventListener('change', (event) => handleFileSelect(event.target.files));
                 
-                elements.statusFilters.addEventListener('click', (e) => {
-                    const link = e.target.closest('.nav-link');
-                    if(link){
-                        e.preventDefault();
-                        
-                        if (elements.scannerView.classList.contains('active')) {
-                            switchView('checklist');
-                        }
-
-                        currentStatusFilter = link.dataset.filter;
-                        elements.statusFilters.querySelectorAll('a').forEach(a => a.classList.remove('active'));
-                        link.classList.add('active');
-                        updateAllViews(localShipmentsCache);
-                        toggleMenu(false);
-                    }
-                });
-
+                // Listeners de Gestión (Borrado)
                 elements.manageShipmentsButton.addEventListener('click', () => toggleDeleteMode(true));
                 elements.cancelDeleteButton.addEventListener('click', () => toggleDeleteMode(false));
                 elements.deleteSelectedButton.addEventListener('click', handleDeleteSelected);
                 elements.selectAllButton.addEventListener('click', handleSelectAllToggle);
-                elements.confirmDeleteBtn.addEventListener('click', executeDelete);
-                elements.cancelConfirmDeleteBtn.addEventListener('click', () => { elements.confirmDeleteModal.style.display = 'none'; });
+                elements.confirmDeleteModal.addEventListener('close', (e) => {
+                    if (e.target.returnValue === 'delete') executeDelete();
+                });
                 
+                // Listeners de Filtros de Búsqueda
                 elements.itemSearchInput.addEventListener('input', applyAllFilters);
                 elements.boxSearchInput.addEventListener('input', applyAllFilters);
                 elements.dateFilterInput.addEventListener('change', applyAllFilters);
-                
                 elements.clearDateFilter.addEventListener('click', () => {
                     elements.dateFilterInput.value = '';
                     elements.itemSearchInput.value = '';
@@ -906,34 +1480,28 @@
                     applyAllFilters();
                 });
                 
-                elements.navChecklist.addEventListener('click', (e) => { e.preventDefault(); switchView('checklist'); toggleMenu(false); });
-                elements.navScanner.addEventListener('click', (e) => { e.preventDefault(); switchView('scanner'); toggleMenu(false); });
-                
+                // Listeners de Escáner
                 elements.scannerInput.addEventListener('input', () => {
                     clearTimeout(scanTimeout);
                     scanTimeout = setTimeout(performScanSearch, 1500);
                 });
-
                 elements.scannerSearchBtn.addEventListener('click', () => {
                     clearTimeout(scanTimeout);
                     performScanSearch();
                 });
-
                 elements.cameraScanBtn.addEventListener('click', () => {
-                    if (isCameraRunning) {
-                        stopCamera();
-                    } else {
-                        startCamera();
-                    }
+                    if (isCameraRunning) stopCamera(); else startCamera();
                 });
 
-                elements.notificationBell.addEventListener('click', () => elements.notificationPanel.classList.toggle('hidden'));
+                // Listeners de Notificaciones
+                elements.notificationBell.addEventListener('click', () => elements.notificationPanel.open = !elements.notificationPanel.open);
                 elements.clearNotificationsBtn.addEventListener('click', () => {
-                    elements.notificationList.innerHTML = '<p class="text-gray-500 text-center p-4">No hay notificaciones</p>';
+                    elements.notificationList.innerHTML = '<md-list-item headline="No hay notificaciones"></md-list-item>';
                     elements.notificationBadge.style.display = 'none';
-                    elements.notificationPanel.classList.add('hidden');
+                    elements.notificationPanel.open = false;
                 });
 
+                // Listeners Globales
                 document.body.addEventListener('change', (e) => { handleCheckChange(e); handleShipmentSelect(e); });
             };
 
